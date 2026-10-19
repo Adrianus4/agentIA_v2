@@ -1,0 +1,13 @@
+[INFO] Scanning for projects...
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /workspace/src/main/java/org/acme/GreetingResource.java:[14,25] cannot find symbol
+[ERROR]   symbol:   class NonExistentService
+[ERROR]   location: package org.acme
+[ERROR] /workspace/src/main/java/org/acme/GreetingResource.java:[22,9] incompatible types: int cannot be converted to java.lang.String
+[ERROR] /workspace/src/main/java/org/acme/GreetingService.java:[8,1] ';' expected
+[INFO] 3 errors
+[INFO] -------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] -------------------------------------------------------------

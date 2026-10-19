@@ -1,0 +1,157 @@
+name: QA Live LLM Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: 'AI Provider for LLM tests / analysis'
+        required: true
+        type: choice
+        default: 'gemini'
+        options:
+          - 'gemini'
+          - 'openai'
+          - 'deepseek'
+      model:
+        description: 'Model identifier override (empty for provider default)'
+        required: false
+        type: string
+        default: ''
+      llm_mode:
+        description: 'LLM test mode (real exercises product repair service; simulated is 100% offline)'
+        required: true
+        type: choice
+        default: 'real'
+        options:
+          - 'real'
+          - 'simulated'
+      run_analysis:
+        description: 'Execute post-test AI analysis with the selected provider'
+        required: true
+        type: boolean
+        default: false
+      verify_generated_java:
+        description: 'Verify generated Java code with local Maven compilation and test execution'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  llm-live:
+    name: Live LLM Verification (${{ inputs.provider }} - ${{ inputs.llm_mode }})
+    runs-on: ubuntu-latest
+    environment: qa-live
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'requirements-qa.txt'
+
+      - name: Set up Java 21 (optional for Java verification)
+        if: ${{ inputs.verify_generated_java }}
+        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4.7.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-qa.txt
+
+      - name: Verify Credentials Guard
+        shell: bash
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          echo "=== Verificando disponibilidad de credenciales para modo ${{ inputs.llm_mode }} ==="
+          if [ "${{ inputs.llm_mode }}" = "real" ]; then
+            if [ "${{ inputs.provider }}" = "gemini" ] && [ -z "$GEMINI_API_KEY" ]; then
+              echo "::error::GEMINI_API_KEY secret no está configurado en el environment 'qa-live'. Bloqueando ejecución en modo real."
+              exit 4
+            elif [ "${{ inputs.provider }}" = "openai" ] && [ -z "$OPENAI_API_KEY" ]; then
+              echo "::error::OPENAI_API_KEY secret no está configurado en el environment 'qa-live'. Bloqueando ejecución en modo real."
+              exit 4
+            elif [ "${{ inputs.provider }}" = "deepseek" ] && [ -z "$DEEPSEEK_API_KEY" ]; then
+              echo "::error::DEEPSEEK_API_KEY secret no está configurado en el environment 'qa-live'. Bloqueando ejecución en modo real."
+              exit 4
+            fi
+            echo "Credencial para proveedor '${{ inputs.provider }}' detectada correctamente."
+          else
+            echo "Modo simulated: Cero tráfico de red requerido. Continuando sin validar secretos."
+          fi
+
+      - name: Execute LLM Suite
+        id: run_llm
+        shell: bash
+        env:
+          INPUT_PROVIDER: ${{ inputs.provider }}
+          INPUT_LLM_MODE: ${{ inputs.llm_mode }}
+          INPUT_MODEL: ${{ inputs.model }}
+          INPUT_RUN_ANALYSIS: ${{ inputs.run_analysis }}
+          INPUT_VERIFY_JAVA: ${{ inputs.verify_generated_java }}
+          # Exponer únicamente la credencial necesaria para el proveedor seleccionado (S08)
+          GEMINI_API_KEY: ${{ inputs.provider == 'gemini' && secrets.GEMINI_API_KEY || '' }}
+          OPENAI_API_KEY: ${{ inputs.provider == 'openai' && secrets.OPENAI_API_KEY || '' }}
+          DEEPSEEK_API_KEY: ${{ inputs.provider == 'deepseek' && secrets.DEEPSEEK_API_KEY || '' }}
+        run: |
+          set +e
+          ARGS=(
+            python scripts/qa.py run
+            --suite llm
+            --llm-provider "$INPUT_PROVIDER"
+            --llm-mode "$INPUT_LLM_MODE"
+            --output-dir "reports/live-llm-${INPUT_PROVIDER}"
+          )
+          if [ -n "$INPUT_MODEL" ]; then
+            ARGS+=(--llm-model "$INPUT_MODEL")
+          fi
+          if [ "$INPUT_VERIFY_JAVA" = "true" ]; then
+            ARGS+=(--verify-generated-java)
+          fi
+          if [ "$INPUT_RUN_ANALYSIS" = "true" ]; then
+            ARGS+=(--ai-analysis --ai-provider "$INPUT_PROVIDER")
+            if [ -n "$INPUT_MODEL" ]; then
+              ARGS+=(--ai-model "$INPUT_MODEL")
+            fi
+          fi
+          echo "Ejecutando suite LLM con argumentos estructurados (sin eval): ${ARGS[*]}"
+          "${ARGS[@]}"
+          EXIT_CODE=$?
+          echo "QA_EXIT_CODE=$EXIT_CODE" >> $GITHUB_ENV
+          exit $EXIT_CODE
+
+      - name: Generate Job Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "### Verificación LLM (${{ inputs.provider }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Proveedor:** \`${{ inputs.provider }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Modo LLM:** \`${{ inputs.llm_mode }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Modelo:** \`${{ inputs.model || 'predeterminado' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Verificación Java:** \`${{ inputs.verify_generated_java }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Análisis IA Posterior:** \`${{ inputs.run_analysis }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Código de Salida:** \`${{ env.QA_EXIT_CODE || 'FAILED_BEFORE_EXECUTION' }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ -f "reports/live-llm-${{ inputs.provider }}/manifest.json" ]; then
+            echo "- **Manifiesto:** Generado exitosamente en \`reports/live-llm-${{ inputs.provider }}\`." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Live LLM Artifacts
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        if: always()
+        with:
+          name: qa-live-llm-${{ inputs.provider }}-${{ inputs.llm_mode }}
+          path: reports/live-llm-${{ inputs.provider }}
+          retention-days: 7

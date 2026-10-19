@@ -1,0 +1,74 @@
+{
+  "fixtureId": "crud-h2",
+  "version": "1.0.0",
+  "blueprint": {
+    "serviceName": "invoice-service",
+    "packageName": "com.agentia.qa.invoice",
+    "framework": "quarkus",
+    "frameworkVersion": "3.15.1",
+    "javaVersion": "21",
+    "buildTool": "maven",
+    "database": "H2",
+    "messaging": "NONE",
+    "parameters": {
+      "database": "H2",
+      "messaging": "NONE",
+      "requirementsSize": "SMALL"
+    },
+    "entities": [
+      {
+        "name": "Invoice",
+        "tableName": "invoices",
+        "primaryKey": "id",
+        "fields": [
+          {
+            "name": "id",
+            "type": "Long",
+            "nullable": false,
+            "primaryKey": true
+          },
+          {
+            "name": "code",
+            "type": "String",
+            "nullable": false,
+            "unique": true
+          },
+          {
+            "name": "customerName",
+            "type": "String",
+            "nullable": false
+          },
+          {
+            "name": "amount",
+            "type": "BigDecimal",
+            "nullable": false
+          }
+        ]
+      }
+    ],
+    "userStories": [
+      {
+        "id": "US-INV-01",
+        "title": "Manage invoices",
+        "description": "As a billing operator, I want to create, read, list, update, and delete invoices with code, customerName, and amount.",
+        "acceptanceCriteria": [
+          "Creating a valid invoice returns HTTP 201 and assigns an id.",
+          "Fetching, updating, and deleting an invoice persists changes in H2.",
+          "Requesting a non-existent invoice returns HTTP 404.",
+          "Creating an invoice without required fields returns HTTP 400."
+        ]
+      }
+    ]
+  },
+  "expectations": {
+    "requiredFiles": [
+      "pom.xml",
+      "src/main/resources/application.properties",
+      "src/main/java/com/agentia/qa/invoice/Invoice.java",
+      "src/main/java/com/agentia/qa/invoice/repository/InvoiceRepository.java",
+      "src/main/java/com/agentia/qa/invoice/resource/InvoiceResource.java"
+    ],
+    "oracleTestRelativePath": "src/test/java/com/agentia/qa/invoice/resource/OracleInvoiceAcceptanceTest.java",
+    "mutationTargetRelativePath": "src/main/java/com/agentia/qa/invoice/resource/InvoiceResource.java"
+  }
+}

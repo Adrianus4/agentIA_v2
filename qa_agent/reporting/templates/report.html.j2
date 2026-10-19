@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Informe de Ejecución QA - {{ result.trace_id }}</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #2563eb;
+      --success-bg: #dcfce7;
+      --success-text: #15803d;
+      --success-border: #86efac;
+      --failed-bg: #fee2e2;
+      --failed-text: #b91c1c;
+      --failed-border: #fca5a5;
+      --warning-bg: #fef3c7;
+      --warning-text: #b45309;
+      --warning-border: #fde68a;
+      --info-bg: #ede9fe;
+      --info-text: #6d28d9;
+      --info-border: #ddd6fe;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .header-title h1 { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+    .header-title p { color: var(--text-muted); font-size: 0.875rem; margin-top: 4px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+      text-transform: uppercase;
+    }
+    .badge-passed, .badge-success { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+    .badge-failed { background: var(--failed-bg); color: var(--failed-text); border-color: var(--failed-border); }
+    .badge-error { background: var(--warning-bg); color: var(--warning-text); border-color: var(--warning-border); }
+    .badge-incomplete, .badge-blocked { background: var(--info-bg); color: var(--info-text); border-color: var(--info-border); }
+    .badge-interrupted { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+    
+    nav.quick-nav {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 0.875rem;
+    }
+    nav.quick-nav a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    nav.quick-nav a:hover { text-decoration: underline; }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+    .metric-number { font-size: 1.75rem; font-weight: 700; color: var(--text); }
+    .metric-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-top: 4px; }
+
+    section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+    section h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 16px; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin-top: 12px;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: #f1f5f9;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+    }
+    tr:hover td { background: #f8fafc; }
+
+    pre {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.8125rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-top: 8px;
+    }
+
+    details {
+      margin-top: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    details[open] { background: #ffffff; }
+    summary {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.875rem;
+      user-select: none;
+    }
+    summary:hover { background: #f1f5f9; }
+    .details-content { padding: 12px 16px; border-top: 1px solid var(--border); }
+
+    .tag {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      color: #334155;
+      font-family: monospace;
+    }
+    a.artifact-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-family: monospace;
+      font-size: 0.8125rem;
+    }
+    a.artifact-link:hover { text-decoration: underline; }
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="header-title">
+      <h1>Informe de Ejecución QA</h1>
+      <p>Traza: <strong>{{ result.trace_id }}</strong> | Alcance: {{ result.scope_note }}</p>
+      <p>Inicio: {{ result.start_utc }} | Fin: {{ result.end_utc }} | Duración: {{ "%.2f"|format(result.duration_seconds) }}s</p>
+    </div>
+    <div>
+      <span class="badge badge-{{ result.status|lower }}">{{ result.status }} (Código {{ result.exit_code }})</span>
+    </div>
+  </header>
+
+  <nav class="quick-nav">
+    <a href="#summary">Resumen</a>
+    <a href="#suites">Suites ({{ result.suites|length }})</a>
+    {% if result.counts.failed > 0 or result.counts.errors > 0 %}
+    <a href="#failures" style="color: var(--failed-text);">Fallos ({{ result.counts.failed + result.counts.errors }})</a>
+    {% endif %}
+    <a href="#steps">Pasos de Preparación</a>
+    <a href="#ai-analysis">Análisis IA</a>
+    <a href="#artifacts">Artefactos ({{ manifest.artifacts|length if manifest else 0 }})</a>
+  </nav>
+
+  <!-- 1. Métricas Globales -->
+  <div class="metrics-grid" id="summary">
+    <div class="metric-card">
+      <div class="metric-number">{{ result.counts.collected }}</div>
+      <div class="metric-label">Casos Recolectados</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-number" style="color: var(--success-text);">{{ result.counts.passed }}</div>
+      <div class="metric-label">Aprobados</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-number" style="color: var(--failed-text);">{{ result.counts.failed }}</div>
+      <div class="metric-label">Fallidos</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-number" style="color: var(--warning-text);">{{ result.counts.errors }}</div>
+      <div class="metric-label">Errores</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-number" style="color: var(--text-muted);">{{ result.counts.skipped + result.counts.xfail }}</div>
+      <div class="metric-label">Omitidos / XFail</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-number">{{ "%.2f"|format(result.duration_seconds) }}s</div>
+      <div class="metric-label">Duración Total</div>
+    </div>
+  </div>
+
+  <!-- 2. Suites -->
+  <section id="suites">
+    <h2>Suites de Prueba</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Suite</th>
+          <th>Estado</th>
+          <th>Motor</th>
+          <th>Aprobados</th>
+          <th>Fallidos</th>
+          <th>Errores</th>
+          <th>Duración</th>
+          <th>Procedencia / Versiones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for suite in result.suites %}
+        <tr>
+          <td><strong>{{ suite.suite_id }}</strong></td>
+          <td><span class="badge badge-{{ suite.status|lower }}">{{ suite.status }}</span></td>
+          <td>{{ suite.engine }}</td>
+          <td>{{ suite.counts.passed }}</td>
+          <td>{{ suite.counts.failed }}</td>
+          <td>{{ suite.counts.errors }}</td>
+          <td>{{ "%.2f"|format(suite.duration_seconds) }}s</td>
+          <td>
+            {% if suite.provenance and suite.provenance.tool_versions %}
+              {% for tool, ver in suite.provenance.tool_versions.items() %}
+                <span class="tag">{{ tool }}: {{ ver }}</span>
+              {% endfor %}
+            {% else %}
+              <span class="text-muted">No registrada</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 3. Fallos y Diagnósticos -->
+  {% set failed_cases = [] %}
+  {% for case in result.cases %}
+    {% if case.status in ['FAILED', 'ERROR'] %}
+      {% set _ = failed_cases.append(case) %}
+    {% endif %}
+  {% endfor %}
+
+  {% if failed_cases|length > 0 %}
+  <section id="failures">
+    <h2 style="color: var(--failed-text);">Casos Fallidos y Errores ({{ failed_cases|length }})</h2>
+    {% for case in failed_cases %}
+    <details open>
+      <summary>
+        <span class="badge badge-{{ case.status|lower }}">{{ case.status }}</span>
+        <strong>{{ case.name }}</strong> ({{ case.classname or case.suite_id }}) - {{ "%.3f"|format(case.duration_seconds) }}s
+      </summary>
+      <div class="details-content">
+        {% if case.message %}
+        <p><strong>Diagnóstico:</strong></p>
+        <pre><code>{{ case.message }}</code></pre>
+        {% else %}
+        <p class="text-muted">Sin mensaje de error explícito registrado.</p>
+        {% endif %}
+        {% if case.suite_id %}
+        <p style="margin-top: 8px; font-size: 0.8125rem;">
+          Artefactos de suite:
+          <a class="artifact-link" href="../{{ case.suite_id }}/junit.xml">{{ case.suite_id }}/junit.xml</a>
+        </p>
+        {% endif %}
+      </div>
+    </details>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <!-- 4. Pasos de Preparación / Build / Typecheck (Separados de casos) -->
+  <section id="steps">
+    <h2>Pasos de Preparación y Compilación</h2>
+    <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 12px;">
+      Los pasos de infraestructura y compilación se registran independientemente y no alteran los conteos de casos de prueba.
+    </p>
+    {% set all_steps = [] %}
+    {% for suite in result.suites %}
+      {% for step in suite.steps %}
+        {% set _ = all_steps.append((suite.suite_id, step)) %}
+      {% endfor %}
+    {% endfor %}
+
+    {% if all_steps|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Suite</th>
+          <th>Paso</th>
+          <th>Descripción</th>
+          <th>Tipo</th>
+          <th>Estado</th>
+          <th>Duración</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for suite_id, step in all_steps %}
+        <tr>
+          <td><span class="tag">{{ suite_id }}</span></td>
+          <td><code>{{ step.step_id }}</code></td>
+          <td>{{ step.description }}</td>
+          <td>{{ step.kind }}</td>
+          <td><span class="badge badge-{{ step.status|lower }}">{{ step.status }}</span></td>
+          <td>{{ "%.2f"|format(step.duration_seconds) }}s</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted" style="font-size: 0.875rem;">No se registraron pasos de preparación independientes.</p>
+    {% endif %}
+  </section>
+
+  <!-- 5. Bloqueos y Capacidades -->
+  {% if result.capabilities|length > 0 %}
+  <section id="capabilities">
+    <h2>Capacidades y Entorno</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Capacidad</th>
+          <th>Categoría</th>
+          <th>Requerido</th>
+          <th>Disponible</th>
+          <th>Versión / Ruta</th>
+          <th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cap in result.capabilities %}
+        <tr>
+          <td><strong>{{ cap.name }}</strong></td>
+          <td>{{ cap.category }}</td>
+          <td>{{ "Sí" if cap.required else "Opcional" }}</td>
+          <td>
+            {% if cap.available %}
+              <span class="badge badge-passed">Disponible</span>
+            {% else %}
+              <span class="badge badge-error">Ausente</span>
+            {% endif %}
+          </td>
+          <td><code>{{ cap.version or cap.path or "-" }}</code></td>
+          <td>{{ cap.reason or "-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+
+  <!-- 6. Análisis IA (Diferenciado y Optativo) -->
+  <section id="ai-analysis">
+    <h2>Análisis Inteligente (Optativo)</h2>
+    {% if analysis and analysis.status != "DISABLED" %}
+      <div style="margin-bottom: 12px;">
+        <span class="badge badge-{{ analysis.status|lower }}">{{ analysis.status }}</span>
+        <span style="font-size: 0.875rem; margin-left: 8px;">Proveedor: <strong>{{ analysis.provider }}</strong> (Modelo: <code>{{ analysis.model }}</code>) | Duración: {{ "%.2f"|format(analysis.duration_seconds) }}s</span>
+      </div>
+      {% if analysis.error_reason %}
+        <p style="color: var(--failed-text); font-size: 0.875rem;"><strong>Motivo de bloqueo o error:</strong> {{ analysis.error_reason }}</p>
+      {% endif %}
+      {% if analysis.hypotheses|length > 0 %}
+        <h3 style="font-size: 1rem; margin-top: 16px; margin-bottom: 8px;">Hipótesis Deterministas</h3>
+        {% for hyp in analysis.hypotheses %}
+        <details open>
+          <summary>
+            <span class="tag">Probabilidad: {{ hyp.likelihood }}</span> {{ hyp.cause }}
+          </summary>
+          <div class="details-content">
+            {% if hyp.suggested_action %}
+            <p><strong>Acción sugerida:</strong> {{ hyp.suggested_action }}</p>
+            {% endif %}
+            {% if hyp.referenced_evidence %}
+            <p style="margin-top: 8px; font-size: 0.8125rem;">
+              <strong>Evidencia referenciada:</strong>
+              {% for ref in hyp.referenced_evidence %}
+                <span class="tag">{{ ref }}</span>
+              {% endfor %}
+            </p>
+            {% endif %}
+          </div>
+        </details>
+        {% endfor %}
+      {% endif %}
+      {% if analysis.prompt_tokens or analysis.total_tokens %}
+      <p style="margin-top: 12px; font-size: 0.75rem; color: var(--text-muted);">
+        Consumo de tokens: Prompt: {{ analysis.prompt_tokens or 0 }} | Completado: {{ analysis.completion_tokens or 0 }} | Total: {{ analysis.total_tokens or 0 }}
+      </p>
+      {% endif %}
+    {% else %}
+      <p style="color: var(--text-muted); font-size: 0.875rem;">
+        Análisis IA no solicitado o desactivado. El veredicto de pruebas se basa 100% en oráculos deterministas locales.
+      </p>
+    {% endif %}
+  </section>
+
+  <!-- 7. Manifiesto de Artefactos Relocalizables -->
+  <section id="artifacts">
+    <h2>Manifiesto de Artefactos de Evidencia</h2>
+    <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 12px;">
+      Todos los enlaces son relativos a este paquete de evidencias. Mover la carpeta preserva la integridad y validez de los enlaces.
+    </p>
+    {% if manifest and manifest.artifacts|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Ruta Relativa</th>
+          <th>Tipo</th>
+          <th>Tamaño</th>
+          <th>Hash SHA-256</th>
+          <th>Procedencia</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for art in manifest.artifacts if art.path != "report/report.html" and not art.path.endswith(".html") %}
+        {% set href_link = art.path if art.path.startswith("report/") else "../" + art.path %}
+        {% if art.path.startswith("report/") %}
+          {% set href_link = art.path[7:] %}
+        {% endif %}
+        <tr>
+          <td><code>{{ art.id }}</code></td>
+          <td><a class="artifact-link" href="{{ href_link }}">{{ art.path }}</a></td>
+          <td><span class="tag">{{ art.type }}</span></td>
+          <td>{{ art.size_bytes }} B</td>
+          <td><code style="font-size: 0.6875rem;">{{ art.sha256[:16] }}...{{ art.sha256[-8:] }}</code></td>
+          <td>{{ art.provenance or "-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted" style="font-size: 0.875rem;">No se encontraron artefactos registrados en el manifiesto.</p>
+    {% endif %}
+  </section>
+
+  <footer>
+    <p>Agente Local de Pruebas &copy; 2026. Documento estático auto-contenido generado sin dependencias remotas.</p>
+  </footer>
+
+</div>
+</body>
+</html>

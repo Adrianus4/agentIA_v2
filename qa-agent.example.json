@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "suites": [
+    "python"
+  ],
+  "timeout_seconds": 300,
+  "output_dir": ".agentia-runtime/qa"
+}

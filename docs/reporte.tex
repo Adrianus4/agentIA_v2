@@ -1,0 +1,140 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noquoting,es-nolists,es-notilde]{babel}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{xurl}
+\usepackage{hyperref}
+
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc}
+
+\geometry{margin=0.85in}
+\setlength{\emergencystretch}{3em}
+\hfuzz=3pt
+
+\title{\textbf{Reporte de Avance: AgentIA v2 --- Semana 12 a 18 de octubre de 2026}}
+\author{Gabriel Janampa Guzmán}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Qué se construyó}
+
+Esta semana se reescribió una versión anterior del sistema cuya lógica estaba codificada de forma fija, lo que dificultaba su mantenimiento. La refactorización separó responsabilidades, estandarizó la comunicación entre componentes y volvió configurables los pasos del flujo.
+
+\textbf{AgentIA v2} es el resultado: una plataforma que genera, verifica y repara microservicios Quarkus 3 / Java 21 de forma automática. El desarrollador describe el servicio en un archivo de especificación (\textit{Blueprint}) y el sistema produce el código, lo compila, ejecuta las pruebas y, si algo falla, intenta corregirlo sin intervención manual.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{@{}l >{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Parte} & \textbf{Qué hace} \\ \midrule
+Contratos & Define en Pydantic la forma exacta del Blueprint y de los mensajes entre componentes. \\
+Orquestador LangGraph & Coordina los pasos (validar, generar, verificar, reparar) y guarda el estado de cada ejecución. \\
+Microservicios FastAPI & Cada agente (validador, generador, verificador, reparador) corre como servicio HTTP independiente. \\
+Agentes de dominio & Generan el código Quarkus (entidades JPA, mensajería Kafka, trazas OpenTelemetry) a partir de plantillas Jinja2. \\
+Interfaz React & Permite ingresar el requerimiento, revisar y aprobar el Blueprint, ver el grafo de ejecución en vivo y elegir el modelo LLM. \\
+\bottomrule
+\end{tabularx}
+\caption{Componentes principales de AgentIA v2}
+\end{table}
+
+\section{Cómo funciona el bucle principal}
+
+El proceso inicia con una descripción en lenguaje natural del requerimiento de negocio. El agente extractor (\texttt{SpecDraftingAgent}) la convierte en un \textit{Blueprint} estructurado (historias de usuario BDD, modelos de dominio, base de datos y mensajería). El usuario revisa y aprueba la estructura de ese Blueprint antes de invocar a los agentes de código (puede devolverlo con ajustes). Con el contrato aprobado, el orquestador valida el esquema, genera el código Quarkus y lo verifica con Maven (compilación y pruebas). Si la verificación falla, un ciclo de reparación aplica parches acotados y vuelve a verificar, hasta un máximo de intentos configurable. El despliegue final (línea punteada) está planificado y aún no se ejecuta.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=0.45cm and 1.8cm,
+    box/.style={rectangle, rounded corners=4pt, minimum width=3.8cm, minimum height=0.68cm,
+                text centered, draw=blue!60!black, fill=blue!7, font=\sffamily\scriptsize},
+    extractor/.style={box, draw=teal!70!black, fill=teal!8, font=\sffamily\scriptsize\bfseries},
+    term/.style={box, rounded corners=6pt, font=\sffamily\scriptsize\bfseries},
+    decision/.style={diamond, aspect=2.0, minimum width=2.4cm, minimum height=0.65cm,
+                     text centered, draw=orange!80!black, fill=orange!10,
+                     font=\sffamily\scriptsize\bfseries},
+    planned/.style={term, dashed, draw=gray!70, fill=white},
+    arrow/.style={-{Stealth[length=2.2mm]}, thick, draw=black!70},
+    lbl/.style={font=\sffamily\tiny, fill=white, inner sep=1pt}
+]
+
+% Columna 1: Fase de Especificacion y Aprobacion
+\node (input)     [term, draw=gray!70, fill=gray!15] {Requerimiento en texto};
+\node (extractor) [extractor, below=of input] {Extractor de requerimientos};
+\node (blueprint) [term, draw=purple!60!black, fill=purple!8, below=of extractor] {Blueprint (contrato)};
+\node (review)    [term, draw=violet!70!black, fill=violet!8, below=of blueprint] {Usuario revisa y aprueba};
+
+% Columna 2: Bucle de Validacion, Generacion y Verificacion
+\node (validate)  [box, right=2.0cm of input] {1. Validar esquema};
+\node (generate)  [box, below=of validate] {2. Generar código Quarkus};
+\node (verify)    [box, below=of generate] {3. Compilar y probar (Maven)};
+\node (ok)        [decision, below=0.45cm of verify] {¿OK?};
+
+% Ramas de Salida y Reparacion
+\node (deploy)    [planned, below=0.5cm of ok] {Despliegue (planificado)};
+\node (repair)    [box, right=1.3cm of verify] {Reparar (parche)};
+\node (retry)     [decision] at (repair |- ok) {¿Reintentar?};
+\node (fail)      [term, draw=red!70, fill=red!12, below=0.5cm of retry] {FALLO};
+
+% Conexiones Columna 1
+\draw [arrow] (input) -- (extractor);
+\draw [arrow] (extractor) -- (blueprint);
+\draw [arrow] (blueprint) -- (review);
+\draw [arrow] (review.west) -- ++(-0.6,0) |- node[lbl, pos=0.25, left] {Ajustes} (extractor.west);
+
+% Transicion Columna 1 -> Columna 2
+\draw [arrow] (review.east) -| ++(0.7,0) |- (validate.west);
+
+% Conexiones Columna 2 y Reparacion
+\draw [arrow] (validate) -- (generate);
+\draw [arrow] (generate) -- (verify);
+\draw [arrow] (verify) -- (ok);
+\draw [arrow] (ok) -- node[lbl, left] {Sí} (deploy);
+\draw [arrow] (ok) -- node[lbl, above] {No} (retry);
+\draw [arrow] (retry) -- node[lbl, right] {Sí} (repair);
+\draw [arrow] (repair) -- (verify);
+\draw [arrow] (retry) -- node[lbl, right] {No} (fail);
+
+\end{tikzpicture}
+\caption{Flujo integral en dos fases: especificación/aprobación (izquierda) y bucle de ejecución/reparación (derecha)}
+\end{figure}
+
+\section{Resultados obtenidos}
+
+Durante las pruebas se registraron \textbf{33 ejecuciones} en la base de datos de control (\texttt{runs.db}) sobre diversos microservicios de negocio (\texttt{IniciacionPagosService}, \texttt{LiquidacionNetaDiferida}, \texttt{EscrowService}, entre otros): 13 culminaron con éxito (12 en su primer intento en $\sim$13\,s y 1 tras una ronda de reparación) y 19 alcanzaron el límite de reintentos (\texttt{NO\_FIX}) ante escenarios complejos (concurrencia, colas Kafka y transaccionalidad eventual). Esto confirma la solidez de la generación base y evidencia la necesidad de dotar al bucle de reparación de mayor contexto y memoria histórica.
+
+\section{Plan de trabajo a seguir (semana 19 a 25 de octubre de 2026)}
+
+El foco es hacer el bucle más inteligente y reproducible. Objetivos:
+
+\begin{enumerate}
+
+    \item \textbf{Memoria de los agentes.}
+    Hoy la memoria vive en el estado del grafo (\texttt{OrchestrationState}) y se guarda como JSON al terminar la traza. Se formalizarán dos niveles: \textit{corto plazo} (historial de acciones y errores entre nodos, para no repetir reparaciones fallidas) y \textit{largo plazo} (almacén persistente de soluciones previas que el agente consulta al generar o reparar nuevos servicios).
+
+    \item \textbf{Método de trabajo pstack.}
+    (a) \textit{Desarrollo:} se adoptarán las \textit{skills} de \href{https://github.com/michael-denyer/pstack-claude}{pstack} en el agente de codificación que desarrolla AgentIA: cada tarea pasa por una \textit{skill} de diseño antes de escribir código y las decisiones quedan registradas.
+    (b) \textit{Aplicación en AgentIA:} se estudiará la metodología de pstack y se elegirán de tres a cuatro principios que encajen con el flujo actual, donde el usuario aprueba el Blueprint antes de los agentes de código (por ejemplo, aclarar ambigüedades del requerimiento con el usuario antes de redactar el Blueprint). Cada principio se medirá comparando intentos de reparación antes y después.
+
+    % \item \textbf{Agentes especializados en el bucle.}
+    % Un agente revisor de calidad del código generado (anti-patrones, nombres inconsistentes) y un agente de estrategia de reintento que use la memoria de fallos previos para no repetir la misma corrección.
+
+    \item \textbf{Base de habilidades de generación con trazabilidad.}
+    Un catálogo de plantillas reutilizables para patrones comunes (Outbox, saga, API REST paginada), cada una con sus pruebas de aceptación. El generador lo consultará antes de producir código desde cero, y cada habilidad aplicada quedará registrada en el estado de la traza para auditar qué produjo cada archivo.
+
+    \item \textbf{Validar el despliegue con Openship.}
+    \href{https://github.com/oblien/openship}{Openship} es una plataforma de despliegue de código abierto (Apache 2.0) con CI/CD integrado. Es multiplataforma y autoalojable: permite pruebas locales ligeras o despliegue completo en un servidor con Docker (modo recomendado en Linux). Se usará para comprobar que un microservicio generado empaqueta su imagen y responde a su verificación de salud (\texttt{/q/health}), sin incurrir en costos de nube durante el desarrollo.
+
+\end{enumerate}
+
+\end{document}

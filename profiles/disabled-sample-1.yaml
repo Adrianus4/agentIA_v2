@@ -1,0 +1,17 @@
+id: "disabled-sample-1"
+framework: "disabled-sample"
+framework_version: "1"
+profile_revision: 1
+java_version: "17"
+build_tool: "maven"
+enabled: false
+baseline_evidence: null
+instruction_set_revision: "v1"
+concepts: {}
+config: {}
+test_style: {}
+verify_commands: {}
+forbidden_imports: []
+allowed_exceptions: []
+pitfalls: []
+templates: {}

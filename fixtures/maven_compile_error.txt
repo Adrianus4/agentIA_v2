@@ -1,0 +1,32 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< org.acme:getting-started >----------------------
+[INFO] Building getting-started 1.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ getting-started ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 2 source files with javac [debug target 21] to target/classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /workspace/src/main/java/org/acme/GreetingResource.java:[14,25] cannot find symbol
+[ERROR]   symbol:   class NonExistentService
+[ERROR]   location: package org.acme
+[INFO] 1 error
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.230 s
+[INFO] Finished at: 2026-10-11T20:00:00Z
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project getting-started: Compilation failure
+[ERROR] /workspace/src/main/java/org/acme/GreetingResource.java:[14,25] cannot find symbol
+[ERROR]   symbol:   class NonExistentService
+[ERROR]   location: package org.acme
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.

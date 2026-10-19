@@ -1,0 +1,647 @@
+{
+  "workspace_dir": "/home/gjanampa/projects/TCS/agentIA_v2/.agentia-runtime/workspaces/IniciacionPagosService-51df28dc",
+  "blueprint": {
+    "name": "IniciacionPagosService",
+    "serviceName": "iniciacion-pagos-service",
+    "packageName": "com.example",
+    "framework": "quarkus",
+    "version": "3.15.1",
+    "javaVersion": 21,
+    "buildTool": "MAVEN",
+    "databaseEngine": "POSTGRESQL",
+    "messagingSystem": "NONE",
+    "requirementsSize": "MEDIUM",
+    "expectedQps": "1000",
+    "dataConsistency": "ACID",
+    "architecture": "layered",
+    "extensions": [
+      "quarkus-rest",
+      "quarkus-rest-jackson",
+      "quarkus-hibernate-orm",
+      "quarkus-hibernate-validator"
+    ],
+    "naturalLanguagePrompt": "Diseñar un microservicio de iniciación de pagos para banca abierta bajo el estándar regulatorio PSD2, que maneja solicitudes de pago, consentimientos y desafíos de autenticación reforzada de cliente (SCA).",
+    "userStories": [
+      {
+        "id": "US-001",
+        "title": "Como un proveedor de servicios financieros (TPP), quiero iniciar un pago para un cliente con un consentimiento pendiente de autorización.",
+        "role": "Usuario del Microservicio",
+        "feature": "Como un proveedor de servicios financieros (TPP), quiero iniciar un pago para un cliente con un consentimiento pendiente de autorización.",
+        "benefit": "El consentimiento debe avanzar a AUTORIZADO si el desafío OTP es válido.",
+        "scenarios": [
+          {
+            "title": "Como un proveedor de servicios financieros (TPP), quiero iniciar un pago para un cliente con un consentimiento pendiente de autorización.",
+            "given": "Dado que un consentimiento de pago ha sido creado en estado PENDIENTE_AUTORIZACION con una ventana de expiración de 10 minutos y un desafío OTP de un solo uso.",
+            "when": "Cuando el cliente envía la respuesta del desafío OTP.",
+            "then": "Entonces el consentimiento debe avanzar a AUTORIZADO y el pago debe despacharse hacia el core bancario mediante un identificador de transacción único de extremo a extremo (EndToEndId)."
+          }
+        ],
+        "detected_entities": [
+          "Consentimiento"
+        ]
+      },
+      {
+        "id": "US-002",
+        "title": "Como un proveedor de servicios financieros (TPP), quiero que el microservicio genere una firma criptográfica de no-repudio de la transacción.",
+        "role": "Usuario del Microservicio",
+        "feature": "Como un proveedor de servicios financieros (TPP), quiero que el microservicio genere una firma criptográfica de no-repudio de la transacción.",
+        "benefit": "La firma criptográfica de no-repudio debe ser generada correctamente.",
+        "scenarios": [
+          {
+            "title": "Como un proveedor de servicios financieros (TPP), quiero que el microservicio genere una firma criptográfica de no-repudio de la transacción.",
+            "given": "Dado que un pago ha sido despachado hacia el core bancario.",
+            "when": "Cuando el microservicio recibe la confirmación de la transacción.",
+            "then": "Entonces debe generar una firma criptográfica de no-repudio de la transacción."
+          }
+        ],
+        "detected_entities": [
+          "Consentimiento"
+        ]
+      },
+      {
+        "id": "US-003",
+        "title": "Como un proveedor de servicios financieros (TPP), quiero que el microservicio despache una notificación webhook con estado ACEPTADO_LIQUIDACION al sistema iniciador del TPP.",
+        "role": "Usuario del Microservicio",
+        "feature": "Como un proveedor de servicios financieros (TPP), quiero que el microservicio despache una notificación webhook con estado ACEPTADO_LIQUIDACION al sistema iniciador del TPP.",
+        "benefit": "La notificación webhook debe contener el estado ACEPTADO_LIQUIDACION.",
+        "scenarios": [
+          {
+            "title": "Como un proveedor de servicios financieros (TPP), quiero que el microservicio despache una notificación webhook con estado ACEPTADO_LIQUIDACION al sistema iniciador del TPP.",
+            "given": "Dado que un pago ha sido despachado hacia el core bancario y se ha generado una firma criptográfica de no-repudio.",
+            "when": "Cuando el microservicio recibe la confirmación de la transacción.",
+            "then": "Entonces debe despachar una notificación webhook con estado ACEPTADO_LIQUIDACION al sistema iniciador del TPP."
+          }
+        ],
+        "detected_entities": [
+          "Consentimiento"
+        ]
+      }
+    ],
+    "domainModels": [
+      {
+        "name": "Consentimiento",
+        "tableName": "consentimientos",
+        "attributes": [
+          {
+            "name": "id",
+            "type": "Long",
+            "primaryKey": true,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "estado",
+            "type": "String",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "expiracion",
+            "type": "Timestamp",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "otp",
+            "type": "String",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "intentos_fallidos",
+            "type": "Integer",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Pago",
+        "tableName": "pagos",
+        "attributes": [
+          {
+            "name": "id",
+            "type": "Long",
+            "primaryKey": true,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "consentimiento_id",
+            "type": "Long",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "end_to_end_id",
+            "type": "String",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "estado",
+            "type": "String",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "name": "Consentimiento",
+        "tableName": "consentimientos",
+        "description": "Entidad de persistencia Panache JPA para Consentimiento",
+        "fields": [
+          {
+            "name": "id",
+            "type": "Long",
+            "primaryKey": true,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "estado",
+            "type": "String",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "expiracion",
+            "type": "Timestamp",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "otp",
+            "type": "String",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "intentos_fallidos",
+            "type": "Integer",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          }
+        ],
+        "table_name": "consentimientos"
+      },
+      {
+        "name": "Pago",
+        "tableName": "pagos",
+        "description": "Entidad de persistencia Panache JPA para Pago",
+        "fields": [
+          {
+            "name": "id",
+            "type": "Long",
+            "primaryKey": true,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "consentimiento_id",
+            "type": "Long",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "end_to_end_id",
+            "type": "String",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          },
+          {
+            "name": "estado",
+            "type": "String",
+            "primaryKey": false,
+            "nullable": false,
+            "validationRules": [
+              "@NotNull"
+            ]
+          }
+        ],
+        "table_name": "pagos"
+      }
+    ],
+    "llm": {
+      "provider": "local",
+      "model": "qwen2.5-coder:7b",
+      "endpoint": "http://127.0.0.1:8080"
+    },
+    "workspaceDir": "/tmp/agentia-workspace/iniciacion-pagos-service"
+  },
+  "trace_id": "51df28dc-2c90-4115-ba73-716d12414fda",
+  "attempts": 0,
+  "validation": {
+    "valid": true,
+    "diagnostics": []
+  },
+  "verification": {
+    "success": true,
+    "exit_code": 0,
+    "timed_out": false,
+    "wall_time_seconds": 14.389,
+    "issues": [],
+    "raw_output": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ----------------< com.example:iniciacion-pagos-service >----------------\n[INFO] Building iniciacion-pagos-service 1.0.0-SNAPSHOT\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- resources:3.3.1:resources (default-resources) @ iniciacion-pagos-service ---\n[INFO] Copying 1 resource from src/main/resources to target/classes\n[INFO] \n[INFO] --- quarkus:3.15.1:generate-code (default) @ iniciacion-pagos-service ---\n[INFO] \n[INFO] --- compiler:3.13.0:compile (default-compile) @ iniciacion-pagos-service ---\n[INFO] Recompiling the module because of changed source code.\n[INFO] Compiling 6 source files with javac [debug release 21] to target/classes\n[INFO] \n[INFO] --- quarkus:3.15.1:generate-code-tests (default) @ iniciacion-pagos-service ---\n[INFO] \n[INFO] --- resources:3.3.1:testResources (default-testResources) @ iniciacion-pagos-service ---\n[INFO] skip non existing resourceDirectory /tmp/agentia-verify/51df28dc-2c9-993281/src/test/resources\n[INFO] \n[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ iniciacion-pagos-service ---\n[INFO] Recompiling the module because of changed dependency.\n[INFO] Compiling 4 source files with javac [debug release 21] to target/test-classes\n[INFO] \n[INFO] --- surefire:3.3.1:test (default-test) @ iniciacion-pagos-service ---\n[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider\n[INFO] \n[INFO] -------------------------------------------------------\n[INFO]  T E S T S\n[INFO] -------------------------------------------------------\n[INFO] Running com.example.repository.ConsentimientoRepositoryTest\n2026-10-16 07:33:48,613 INFO  [io.quarkus] (main) iniciacion-pagos-service 1.0.0-SNAPSHOT on JVM (powered by Quarkus 3.15.1) started in 3.456s. Listening on: http://localhost:38981\n2026-10-16 07:33:48,614 INFO  [io.quarkus] (main) Profile test activated. \n2026-10-16 07:33:48,614 INFO  [io.quarkus] (main) Installed features: [agroal, cdi, hibernate-orm, hibernate-orm-panache, hibernate-validator, jdbc-h2, jdbc-postgresql, narayana-jta, rest, rest-jackson, smallrye-context-propagation, vertx]\n[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.918 s -- in com.example.repository.ConsentimientoRepositoryTest\n[INFO] Running com.example.repository.PagoRepositoryTest\n[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in com.example.repository.PagoRepositoryTest\n[INFO] Running com.example.resource.ConsentimientoResourceTest\n[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.114 s -- in com.example.resource.ConsentimientoResourceTest\n[INFO] Running com.example.resource.PagoResourceTest\n[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.112 s -- in com.example.resource.PagoResourceTest\n2026-10-16 07:33:50,418 INFO  [io.quarkus] (main) iniciacion-pagos-service stopped in 0.026s\n[INFO] \n[INFO] Results:\n[INFO] \n[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0\n[INFO] \n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  12.948 s\n[INFO] Finished at: 2026-10-16T07:33:50-05:00\n[INFO] ------------------------------------------------------------------------\n",
+    "raw_output_truncated": false,
+    "runner_name": "LocalSubprocessRunner",
+    "image": "host"
+  },
+  "repair": null,
+  "generated_files": [
+    {
+      "path": "src/main/java/com/example/Consentimiento.java",
+      "content": "package com.example;\n\nimport jakarta.persistence.*;\nimport jakarta.validation.constraints.*;\nimport java.math.BigDecimal;\nimport java.sql.Timestamp;\nimport java.time.LocalDate;\nimport java.time.LocalDateTime;\nimport java.time.Instant;\nimport java.util.UUID;\n\n@Entity\n@Table(name = \"consentimientos\")\npublic class Consentimiento {\n\n    @Id\n    @GeneratedValue(strategy = GenerationType.IDENTITY)\n    @Column(name = \"id\")\n    private Long id;\n\n    @NotNull\n    @Column(name = \"estado\", nullable = false)\n    private String estado;\n\n    @NotNull\n    @Column(name = \"expiracion\", nullable = false)\n    private Timestamp expiracion;\n\n    @NotNull\n    @Column(name = \"otp\", nullable = false)\n    private String otp;\n\n    @NotNull\n    @Column(name = \"intentos_fallidos\", nullable = false)\n    private Integer intentosFallidos;\n\n    public Consentimiento() {\n    }\n\n    public Long getId() {\n        return id;\n    }\n\n    public void setId(Long id) {\n        this.id = id;\n    }\n\n    public String getEstado() {\n        return estado;\n    }\n\n    public void setEstado(String estado) {\n        this.estado = estado;\n    }\n\n    public Timestamp getExpiracion() {\n        return expiracion;\n    }\n\n    public void setExpiracion(Timestamp expiracion) {\n        this.expiracion = expiracion;\n    }\n\n    public String getOtp() {\n        return otp;\n    }\n\n    public void setOtp(String otp) {\n        this.otp = otp;\n    }\n\n    public Integer getIntentosFallidos() {\n        return intentosFallidos;\n    }\n\n    public void setIntentosFallidos(Integer intentosFallidos) {\n        this.intentosFallidos = intentosFallidos;\n    }\n\n}\n",
+      "digest": "5939d88d78e05ad53b3f09fa544940bc5098f8535b8dc16eb8f4c0174c81da73"
+    },
+    {
+      "path": "src/main/java/com/example/Pago.java",
+      "content": "package com.example;\n\nimport jakarta.persistence.*;\nimport jakarta.validation.constraints.*;\nimport java.math.BigDecimal;\nimport java.sql.Timestamp;\nimport java.time.LocalDate;\nimport java.time.LocalDateTime;\nimport java.time.Instant;\nimport java.util.UUID;\n\n@Entity\n@Table(name = \"pagos\")\npublic class Pago {\n\n    @Id\n    @GeneratedValue(strategy = GenerationType.IDENTITY)\n    @Column(name = \"id\")\n    private Long id;\n\n    @NotNull\n    @Column(name = \"consentimiento_id\", nullable = false)\n    private Long consentimientoId;\n\n    @NotNull\n    @Column(name = \"end_to_end_id\", nullable = false)\n    private String endToEndId;\n\n    @NotNull\n    @Column(name = \"estado\", nullable = false)\n    private String estado;\n\n    public Pago() {\n    }\n\n    public Long getId() {\n        return id;\n    }\n\n    public void setId(Long id) {\n        this.id = id;\n    }\n\n    public Long getConsentimientoId() {\n        return consentimientoId;\n    }\n\n    public void setConsentimientoId(Long consentimientoId) {\n        this.consentimientoId = consentimientoId;\n    }\n\n    public String getEndToEndId() {\n        return endToEndId;\n    }\n\n    public void setEndToEndId(String endToEndId) {\n        this.endToEndId = endToEndId;\n    }\n\n    public String getEstado() {\n        return estado;\n    }\n\n    public void setEstado(String estado) {\n        this.estado = estado;\n    }\n\n}\n",
+      "digest": "1aaf8c2ea494cbd24e0bf8ee4513df38eb76780c5063c4e901b81ed3af0563b9"
+    },
+    {
+      "path": "src/main/java/com/example/repository/ConsentimientoRepository.java",
+      "content": "package com.example.repository;\n\nimport com.example.Consentimiento;\nimport io.quarkus.hibernate.orm.panache.PanacheRepository;\nimport jakarta.enterprise.context.ApplicationScoped;\n\n@ApplicationScoped\npublic class ConsentimientoRepository implements PanacheRepository<Consentimiento> {\n}\n",
+      "digest": "2b0b295df128f6567f1fcf2895940739f13a240cf46729a524f31e0b76becbb0"
+    },
+    {
+      "path": "src/main/java/com/example/resource/ConsentimientoResource.java",
+      "content": "package com.example.resource;\n\nimport com.example.Consentimiento;\nimport com.example.repository.ConsentimientoRepository;\nimport io.quarkus.panache.common.Page;\nimport jakarta.inject.Inject;\nimport jakarta.transaction.Transactional;\nimport jakarta.validation.Valid;\nimport jakarta.validation.constraints.NotNull;\nimport jakarta.ws.rs.*;\nimport jakarta.ws.rs.core.MediaType;\nimport jakarta.ws.rs.core.Response;\nimport java.net.URI;\nimport java.util.List;\nimport java.util.UUID;\n\n@Path(\"/api/consentimiento\")\n@Produces(MediaType.APPLICATION_JSON)\n@Consumes(MediaType.APPLICATION_JSON)\npublic class ConsentimientoResource {\n\n    @Inject\n    ConsentimientoRepository repository;\n\n    @GET\n    public List<Consentimiento> list(\n        @QueryParam(\"page\") @DefaultValue(\"0\") int page,\n        @QueryParam(\"size\") @DefaultValue(\"20\") int size\n    ) {\n        if (size <= 0) {\n            return repository.listAll();\n        }\n        int safePage = Math.max(page, 0);\n        int safeSize = Math.min(size, 100);\n        return repository.findAll().page(Page.of(safePage, safeSize)).list();\n    }\n\n    @GET\n    @Path(\"/{id}\")\n    public Response getById(@PathParam(\"id\") Long id) {\n        return repository.findByIdOptional(id)\n            .map(entity -> Response.ok(entity).build())\n            .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());\n    }\n\n    @POST\n    @Transactional\n    public Response create(@Valid @NotNull Consentimiento entity) {\n        entity.setId(null);\n        repository.persist(entity);\n        return Response.created(URI.create(\"/api/consentimiento/\" + entity.getId())).entity(entity).build();\n    }\n\n    @PUT\n    @Path(\"/{id}\")\n    @Transactional\n    public Response update(@PathParam(\"id\") Long id, @Valid @NotNull Consentimiento updated) {\n        Consentimiento existing = repository.findById(id);\n        if (existing == null) {\n            return Response.status(Response.Status.NOT_FOUND).build();\n        }\n        if (updated.getEstado() != null) {\n            existing.setEstado(updated.getEstado());\n        }\n        if (updated.getExpiracion() != null) {\n            existing.setExpiracion(updated.getExpiracion());\n        }\n        if (updated.getOtp() != null) {\n            existing.setOtp(updated.getOtp());\n        }\n        if (updated.getIntentosFallidos() != null) {\n            existing.setIntentosFallidos(updated.getIntentosFallidos());\n        }\n        return Response.ok(existing).build();\n    }\n\n    @DELETE\n    @Path(\"/{id}\")\n    @Transactional\n    public Response delete(@PathParam(\"id\") Long id) {\n        boolean deleted = repository.deleteById(id);\n        if (!deleted) {\n            return Response.status(Response.Status.NOT_FOUND).build();\n        }\n        return Response.status(Response.Status.NO_CONTENT).build();\n    }\n}\n",
+      "digest": "c70d0f5e6511a9ac26de13bf016d4a3c636b32ab6a48a0c98b990798d2e3396b"
+    },
+    {
+      "path": "src/main/java/com/example/repository/PagoRepository.java",
+      "content": "package com.example.repository;\n\nimport com.example.Pago;\nimport io.quarkus.hibernate.orm.panache.PanacheRepository;\nimport jakarta.enterprise.context.ApplicationScoped;\n\n@ApplicationScoped\npublic class PagoRepository implements PanacheRepository<Pago> {\n}\n",
+      "digest": "96456c07db93a8c072423aeead35bc20148b49830c9840415f43267bae3f7190"
+    },
+    {
+      "path": "src/main/java/com/example/resource/PagoResource.java",
+      "content": "package com.example.resource;\n\nimport com.example.Pago;\nimport com.example.repository.PagoRepository;\nimport io.quarkus.panache.common.Page;\nimport jakarta.inject.Inject;\nimport jakarta.transaction.Transactional;\nimport jakarta.validation.Valid;\nimport jakarta.validation.constraints.NotNull;\nimport jakarta.ws.rs.*;\nimport jakarta.ws.rs.core.MediaType;\nimport jakarta.ws.rs.core.Response;\nimport java.net.URI;\nimport java.util.List;\nimport java.util.UUID;\n\n@Path(\"/api/pago\")\n@Produces(MediaType.APPLICATION_JSON)\n@Consumes(MediaType.APPLICATION_JSON)\npublic class PagoResource {\n\n    @Inject\n    PagoRepository repository;\n\n    @GET\n    public List<Pago> list(\n        @QueryParam(\"page\") @DefaultValue(\"0\") int page,\n        @QueryParam(\"size\") @DefaultValue(\"20\") int size\n    ) {\n        if (size <= 0) {\n            return repository.listAll();\n        }\n        int safePage = Math.max(page, 0);\n        int safeSize = Math.min(size, 100);\n        return repository.findAll().page(Page.of(safePage, safeSize)).list();\n    }\n\n    @GET\n    @Path(\"/{id}\")\n    public Response getById(@PathParam(\"id\") Long id) {\n        return repository.findByIdOptional(id)\n            .map(entity -> Response.ok(entity).build())\n            .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());\n    }\n\n    @POST\n    @Transactional\n    public Response create(@Valid @NotNull Pago entity) {\n        entity.setId(null);\n        repository.persist(entity);\n        return Response.created(URI.create(\"/api/pago/\" + entity.getId())).entity(entity).build();\n    }\n\n    @PUT\n    @Path(\"/{id}\")\n    @Transactional\n    public Response update(@PathParam(\"id\") Long id, @Valid @NotNull Pago updated) {\n        Pago existing = repository.findById(id);\n        if (existing == null) {\n            return Response.status(Response.Status.NOT_FOUND).build();\n        }\n        if (updated.getConsentimientoId() != null) {\n            existing.setConsentimientoId(updated.getConsentimientoId());\n        }\n        if (updated.getEndToEndId() != null) {\n            existing.setEndToEndId(updated.getEndToEndId());\n        }\n        if (updated.getEstado() != null) {\n            existing.setEstado(updated.getEstado());\n        }\n        return Response.ok(existing).build();\n    }\n\n    @DELETE\n    @Path(\"/{id}\")\n    @Transactional\n    public Response delete(@PathParam(\"id\") Long id) {\n        boolean deleted = repository.deleteById(id);\n        if (!deleted) {\n            return Response.status(Response.Status.NOT_FOUND).build();\n        }\n        return Response.status(Response.Status.NO_CONTENT).build();\n    }\n}\n",
+      "digest": "88ff78cfe74c2bd0273cf5bb844c40c9ed2f1d3d1b357dfa40af6839784ab980"
+    },
+    {
+      "path": "src/test/java/com/example/resource/ConsentimientoResourceTest.java",
+      "content": "package com.example.resource;\n\nimport io.quarkus.test.junit.QuarkusTest;\nimport io.restassured.http.ContentType;\nimport org.junit.jupiter.api.Test;\nimport static io.restassured.RestAssured.given;\nimport static org.hamcrest.CoreMatchers.*;\n\n@QuarkusTest\npublic class ConsentimientoResourceTest {\n\n    @Test\n    public void testListEndpoint() {\n        given()\n            .when().get(\"/api/consentimiento\")\n            .then()\n            .statusCode(200);\n    }\n\n    @Test\n    public void testGetNotFoundEndpoint() {\n        given()\n            .when().get(\"/api/consentimiento/999999\")\n            .then()\n            .statusCode(404);\n    }\n\n    @Test\n    public void testCreateGetUpdateAndDeleteLifecycle() {\n        Object createdId = given()\n            .contentType(ContentType.JSON)\n            .body(\"{\\\"estado\\\": \\\"sample_estado_3\\\", \\\"expiracion\\\": \\\"2026-10-16T12:00:00Z\\\", \\\"otp\\\": \\\"sample_otp_3\\\", \\\"intentosFallidos\\\": 3}\")\n            .when().post(\"/api/consentimiento\")\n            .then()\n            .statusCode(201)\n            .body(\"id\", notNullValue())\n            .extract().path(\"id\");\n\n        given()\n            .when().get(\"/api/consentimiento/\" + createdId)\n            .then()\n            .statusCode(200)\n            .body(\"id\", notNullValue());\n\n        given()\n            .contentType(ContentType.JSON)\n            .body(\"{\\\"estado\\\": \\\"sample_estado_4\\\", \\\"expiracion\\\": \\\"2026-10-17T12:00:00Z\\\", \\\"otp\\\": \\\"sample_otp_4\\\", \\\"intentosFallidos\\\": 4}\")\n            .when().put(\"/api/consentimiento/\" + createdId)\n            .then()\n            .statusCode(200)\n            .body(\"estado\", equalTo(\"sample_estado_4\"));\n\n        given()\n            .when().delete(\"/api/consentimiento/\" + createdId)\n            .then()\n            .statusCode(204);\n\n        given()\n            .when().get(\"/api/consentimiento/\" + createdId)\n            .then()\n            .statusCode(404);\n    }\n\n    @Test\n    public void testUpdateNotFoundEndpoint() {\n        given()\n            .contentType(ContentType.JSON)\n            .body(\"{\\\"estado\\\": \\\"sample_estado_4\\\", \\\"expiracion\\\": \\\"2026-10-17T12:00:00Z\\\", \\\"otp\\\": \\\"sample_otp_4\\\", \\\"intentosFallidos\\\": 4}\")\n            .when().put(\"/api/consentimiento/999999\")\n            .then()\n            .statusCode(404);\n    }\n\n    @Test\n    public void testDeleteNotFoundEndpoint() {\n        given()\n            .when().delete(\"/api/consentimiento/999999\")\n            .then()\n            .statusCode(404);\n    }\n}\n",
+      "digest": "399988dc3c05003306eb942e7ca8e665814e3ac40cd1d3fec868ab2e2c0aa33c"
+    },
+    {
+      "path": "src/test/java/com/example/repository/ConsentimientoRepositoryTest.java",
+      "content": "package com.example.repository;\n\nimport com.example.Consentimiento;\nimport io.quarkus.test.junit.QuarkusTest;\nimport jakarta.inject.Inject;\nimport jakarta.transaction.Transactional;\nimport org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.*;\nimport java.math.BigDecimal;\nimport java.sql.Timestamp;\nimport java.time.LocalDate;\nimport java.time.LocalDateTime;\nimport java.time.Instant;\nimport java.util.UUID;\n\n@QuarkusTest\npublic class ConsentimientoRepositoryTest {\n\n    @Inject\n    ConsentimientoRepository repository;\n\n    @Test\n    @Transactional\n    public void testPersistAndFind() {\n        repository.deleteAll();\n        Consentimiento entity = new Consentimiento();\n        entity.setEstado(\"Sample\");\n        entity.setExpiracion(new Timestamp(System.currentTimeMillis()));\n        entity.setOtp(\"Sample\");\n        entity.setIntentosFallidos(1);\n\n        repository.persist(entity);\n        assertNotNull(entity.getId());\n        assertTrue(repository.findByIdOptional(entity.getId()).isPresent());\n        assertNotNull(repository.findById(entity.getId()));\n        repository.deleteById(entity.getId());\n    }\n\n    @Test\n    @Transactional\n    public void testDelete() {\n        repository.deleteAll();\n        Consentimiento entity = new Consentimiento();\n        entity.setEstado(\"Sample_2\");\n        entity.setExpiracion(new Timestamp(System.currentTimeMillis()));\n        entity.setOtp(\"Sample_2\");\n        entity.setIntentosFallidos(2);\n\n        repository.persist(entity);\n        Long id = entity.getId();\n        assertNotNull(id);\n\n        boolean deleted = repository.deleteById(id);\n        assertTrue(deleted);\n        assertTrue(repository.findByIdOptional(id).isEmpty());\n    }\n}\n",
+      "digest": "e579f6a414e8772dc877f0fb8501f8b95af18e89ca7950fca56e8602b03e561b"
+    },
+    {
+      "path": "src/test/java/com/example/resource/PagoResourceTest.java",
+      "content": "package com.example.resource;\n\nimport io.quarkus.test.junit.QuarkusTest;\nimport io.restassured.http.ContentType;\nimport org.junit.jupiter.api.Test;\nimport static io.restassured.RestAssured.given;\nimport static org.hamcrest.CoreMatchers.*;\n\n@QuarkusTest\npublic class PagoResourceTest {\n\n    @Test\n    public void testListEndpoint() {\n        given()\n            .when().get(\"/api/pago\")\n            .then()\n            .statusCode(200);\n    }\n\n    @Test\n    public void testGetNotFoundEndpoint() {\n        given()\n            .when().get(\"/api/pago/999999\")\n            .then()\n            .statusCode(404);\n    }\n\n    @Test\n    public void testCreateGetUpdateAndDeleteLifecycle() {\n        Object createdId = given()\n            .contentType(ContentType.JSON)\n            .body(\"{\\\"consentimientoId\\\": 3, \\\"endToEndId\\\": \\\"sample_endToEndId_3\\\", \\\"estado\\\": \\\"sample_estado_3\\\"}\")\n            .when().post(\"/api/pago\")\n            .then()\n            .statusCode(201)\n            .body(\"id\", notNullValue())\n            .extract().path(\"id\");\n\n        given()\n            .when().get(\"/api/pago/\" + createdId)\n            .then()\n            .statusCode(200)\n            .body(\"id\", notNullValue());\n\n        given()\n            .contentType(ContentType.JSON)\n            .body(\"{\\\"consentimientoId\\\": 4, \\\"endToEndId\\\": \\\"sample_endToEndId_4\\\", \\\"estado\\\": \\\"sample_estado_4\\\"}\")\n            .when().put(\"/api/pago/\" + createdId)\n            .then()\n            .statusCode(200)\n            .body(\"endToEndId\", equalTo(\"sample_endToEndId_4\"));\n\n        given()\n            .when().delete(\"/api/pago/\" + createdId)\n            .then()\n            .statusCode(204);\n\n        given()\n            .when().get(\"/api/pago/\" + createdId)\n            .then()\n            .statusCode(404);\n    }\n\n    @Test\n    public void testUpdateNotFoundEndpoint() {\n        given()\n            .contentType(ContentType.JSON)\n            .body(\"{\\\"consentimientoId\\\": 4, \\\"endToEndId\\\": \\\"sample_endToEndId_4\\\", \\\"estado\\\": \\\"sample_estado_4\\\"}\")\n            .when().put(\"/api/pago/999999\")\n            .then()\n            .statusCode(404);\n    }\n\n    @Test\n    public void testDeleteNotFoundEndpoint() {\n        given()\n            .when().delete(\"/api/pago/999999\")\n            .then()\n            .statusCode(404);\n    }\n}\n",
+      "digest": "99889951139c67cb52366877eb623b036875df44593118c4e9a112a8890b9ab4"
+    },
+    {
+      "path": "src/test/java/com/example/repository/PagoRepositoryTest.java",
+      "content": "package com.example.repository;\n\nimport com.example.Pago;\nimport io.quarkus.test.junit.QuarkusTest;\nimport jakarta.inject.Inject;\nimport jakarta.transaction.Transactional;\nimport org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.*;\nimport java.math.BigDecimal;\nimport java.sql.Timestamp;\nimport java.time.LocalDate;\nimport java.time.LocalDateTime;\nimport java.time.Instant;\nimport java.util.UUID;\n\n@QuarkusTest\npublic class PagoRepositoryTest {\n\n    @Inject\n    PagoRepository repository;\n\n    @Test\n    @Transactional\n    public void testPersistAndFind() {\n        repository.deleteAll();\n        Pago entity = new Pago();\n        entity.setConsentimientoId(1L);\n        entity.setEndToEndId(\"Sample\");\n        entity.setEstado(\"Sample\");\n\n        repository.persist(entity);\n        assertNotNull(entity.getId());\n        assertTrue(repository.findByIdOptional(entity.getId()).isPresent());\n        assertNotNull(repository.findById(entity.getId()));\n        repository.deleteById(entity.getId());\n    }\n\n    @Test\n    @Transactional\n    public void testDelete() {\n        repository.deleteAll();\n        Pago entity = new Pago();\n        entity.setConsentimientoId(2L);\n        entity.setEndToEndId(\"Sample_2\");\n        entity.setEstado(\"Sample_2\");\n\n        repository.persist(entity);\n        Long id = entity.getId();\n        assertNotNull(id);\n\n        boolean deleted = repository.deleteById(id);\n        assertTrue(deleted);\n        assertTrue(repository.findByIdOptional(id).isEmpty());\n    }\n}\n",
+      "digest": "9006ca6b1045f92f0a3b4e0eea32ab8e7aed963aa6154c68aecc73ab15424daf"
+    },
+    {
+      "path": "pom.xml",
+      "content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n    <modelVersion>4.0.0</modelVersion>\n    <groupId>com.example</groupId>\n    <artifactId>iniciacion-pagos-service</artifactId>\n    <version>1.0.0-SNAPSHOT</version>\n\n    <properties>\n        <compiler-plugin.version>3.13.0</compiler-plugin.version>\n        <maven.compiler.release>21</maven.compiler.release>\n        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>\n        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>\n        <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>\n        <quarkus.platform.version>3.15.1</quarkus.platform.version>\n        <surefire-plugin.version>3.3.1</surefire-plugin.version>\n    </properties>\n\n    <dependencyManagement>\n        <dependencies>\n            <dependency>\n                <groupId>${quarkus.platform.group-id}</groupId>\n                <artifactId>${quarkus.platform.artifact-id}</artifactId>\n                <version>${quarkus.platform.version}</version>\n                <type>pom</type>\n                <scope>import</scope>\n            </dependency>\n        </dependencies>\n    </dependencyManagement>\n\n    <dependencies>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-arc</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-hibernate-orm-panache</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-hibernate-validator</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-jdbc-postgresql</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-rest-jackson</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-jdbc-h2</artifactId>\n            <scope>test</scope>\n        </dependency>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-junit5</artifactId>\n            <scope>test</scope>\n        </dependency>\n        <dependency>\n            <groupId>io.rest-assured</groupId>\n            <artifactId>rest-assured</artifactId>\n            <scope>test</scope>\n        </dependency>\n    </dependencies>\n\n    <build>\n        <plugins>\n            <plugin>\n                <groupId>${quarkus.platform.group-id}</groupId>\n                <artifactId>quarkus-maven-plugin</artifactId>\n                <version>${quarkus.platform.version}</version>\n                <extensions>true</extensions>\n                <executions>\n                    <execution>\n                        <goals>\n                            <goal>build</goal>\n                            <goal>generate-code</goal>\n                            <goal>generate-code-tests</goal>\n                        </goals>\n                    </execution>\n                </executions>\n            </plugin>\n            <plugin>\n                <artifactId>maven-compiler-plugin</artifactId>\n                <version>${compiler-plugin.version}</version>\n                <configuration>\n                    <compilerArgs>\n                        <arg>-parameters</arg>\n                    </compilerArgs>\n                </configuration>\n            </plugin>\n            <plugin>\n                <artifactId>maven-surefire-plugin</artifactId>\n                <version>${surefire-plugin.version}</version>\n                <configuration>\n                    <systemPropertyVariables>\n                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>\n                    </systemPropertyVariables>\n                </configuration>\n            </plugin>\n        </plugins>\n    </build>\n</project>\n",
+      "digest": "80c6a29ad31fbc388ec504b0f9f164ddfcc6dab277e16feee9b56b2d5e120c1a"
+    },
+    {
+      "path": "src/main/resources/application.properties",
+      "content": "quarkus.application.name=iniciacion-pagos-service\nquarkus.http.port=8080\nquarkus.log.level=INFO\nquarkus.datasource.db-kind=postgresql\n%test.quarkus.datasource.db-kind=h2\n\n# Datasource connection settings per profile\n%dev.quarkus.datasource.jdbc.url=${DB_JDBC_URL:jdbc:postgresql://localhost:5432/iniciacion_pagos_service}\n%dev.quarkus.datasource.username=${DB_USERNAME:postgres}\n%dev.quarkus.datasource.password=${DB_PASSWORD:postgres}\n\n%test.quarkus.datasource.jdbc.url=${TEST_DB_JDBC_URL:jdbc:h2:mem:iniciacion_pagos_service_test;DB_CLOSE_DELAY=-1}\n%test.quarkus.datasource.username=${TEST_DB_USERNAME:sa}\n%test.quarkus.datasource.password=${TEST_DB_PASSWORD:sa}\n\n%prod.quarkus.datasource.jdbc.url=${DB_JDBC_URL:jdbc:postgresql://localhost:5432/iniciacion_pagos_service}\n%prod.quarkus.datasource.username=${DB_USERNAME:postgres}\n%prod.quarkus.datasource.password=${DB_PASSWORD:postgres}\n\n# Database schema management per environment (never drop-and-create in production)\n%dev.quarkus.hibernate-orm.database.generation=drop-and-create\n%test.quarkus.hibernate-orm.database.generation=drop-and-create\n%prod.quarkus.hibernate-orm.database.generation=${DB_SCHEMA_GENERATION:validate}\n",
+      "digest": "7a56edc5c054caaac1a9e550c8b21d00b3848928a17d65d15596acfc72c5db6a"
+    }
+  ],
+  "outcome": "SUCCESS",
+  "profile": {
+    "id": "quarkus-3.15",
+    "framework": "quarkus",
+    "framework_version": "3.15",
+    "profile_revision": 1,
+    "java_version": "21",
+    "build_tool": "maven",
+    "enabled": true,
+    "baseline_evidence": "Quarkus 3.15 LTS with Java 21 baseline for enterprise microservices",
+    "instruction_set_revision": "v1",
+    "concepts": {
+      "mock_in_test": {
+        "annotations": [
+          "@InjectMock"
+        ],
+        "imports": [
+          "io.quarkus.test.junit.mockito.InjectMock"
+        ]
+      },
+      "dependency_injection": {
+        "annotations": [
+          "@Inject",
+          "@ApplicationScoped"
+        ],
+        "imports": [
+          "jakarta.inject.Inject",
+          "jakarta.enterprise.context.ApplicationScoped"
+        ]
+      },
+      "rest_endpoint": {
+        "annotations": [
+          "@Path",
+          "@GET",
+          "@POST",
+          "@PUT",
+          "@DELETE",
+          "@Produces",
+          "@Consumes",
+          "@Transactional"
+        ],
+        "imports": [
+          "jakarta.ws.rs.Path",
+          "jakarta.ws.rs.GET",
+          "jakarta.ws.rs.POST",
+          "jakarta.ws.rs.PUT",
+          "jakarta.ws.rs.DELETE",
+          "jakarta.ws.rs.Produces",
+          "jakarta.ws.rs.Consumes",
+          "jakarta.ws.rs.core.MediaType",
+          "jakarta.ws.rs.core.Response",
+          "jakarta.transaction.Transactional"
+        ]
+      },
+      "orm_entity": {
+        "annotations": [
+          "@Entity",
+          "@Table",
+          "@Id",
+          "@GeneratedValue"
+        ],
+        "imports": [
+          "jakarta.persistence.Entity",
+          "jakarta.persistence.Table",
+          "jakarta.persistence.Id",
+          "jakarta.persistence.GeneratedValue",
+          "jakarta.validation.constraints.NotNull"
+        ]
+      },
+      "transactional": {
+        "annotations": [
+          "@Transactional"
+        ],
+        "imports": [
+          "jakarta.transaction.Transactional"
+        ]
+      }
+    },
+    "config": {
+      "file_path": "src/main/resources/application.properties",
+      "format": "properties",
+      "default_port": 8080,
+      "properties": {
+        "quarkus.http.port": 8080,
+        "quarkus.log.level": "INFO"
+      }
+    },
+    "test_style": {
+      "class_annotations": [
+        "@QuarkusTest"
+      ],
+      "imports": [
+        "io.quarkus.test.junit.QuarkusTest",
+        "org.junit.jupiter.api.Test",
+        "static org.junit.jupiter.api.Assertions.*",
+        "static org.mockito.Mockito.*",
+        "io.quarkus.test.junit.mockito.InjectMock",
+        "static io.restassured.RestAssured.given",
+        "static org.hamcrest.CoreMatchers.*",
+        "java.util.*",
+        "java.math.BigDecimal"
+      ],
+      "assertion_library": "junit-jupiter"
+    },
+    "verify_commands": {
+      "compile": "mvn clean compile -DskipTests",
+      "test": "mvn test",
+      "package": "mvn package -DskipTests"
+    },
+    "forbidden_imports": [
+      "org.springframework.",
+      "org.junit.Test",
+      "org.junit.Assert",
+      "javax.inject.",
+      "javax.ws.rs.",
+      "javax.persistence.",
+      "javax.transaction."
+    ],
+    "allowed_exceptions": [
+      "jakarta.ws.rs.WebApplicationException",
+      "jakarta.ws.rs.NotFoundException",
+      "jakarta.ws.rs.BadRequestException",
+      "java.lang.IllegalArgumentException",
+      "java.lang.IllegalStateException"
+    ],
+    "pitfalls": [
+      "Never use @MockBean or @Autowired from Spring; use @InjectMock and @Inject.",
+      "Quarkus 3.15 uses Jakarta EE 10 (jakarta.* namespace), never use javax.* packages.",
+      "Field injection in Quarkus tests requires package-private or public fields, not private.",
+      "Panache active record methods must not conflict with repository pattern usage.",
+      "In PanacheRepository, built-in methods (listAll, findByIdOptional, persist, deleteById) are already provided. Do not re-declare conflicting methods like List findAll() or void deleteById(). Keep Panache repository class empty unless custom query methods are required.",
+      "In REST resources with Panache repositories, use repository.listAll() instead of repository.findAll().",
+      "PanacheRepository does not have existsById(id) or exists(id). For existence check, check findByIdOptional(id).isEmpty() or findById(id) == null, or use boolean deleteById(id).",
+      "In Quarkus REST tests, test endpoints using RestAssured (given().when().get(...)) or inject the Panache repository directly. Do NOT invent non-existent service classes (e.g. EntityService).",
+      "When using JUnit assertions (assertTrue, assertEquals) or Mockito methods (when, verify), use static imports: 'import static org.junit.jupiter.api.Assertions.*;' and 'import static org.mockito.Mockito.*;'.",
+      "Always import Java collections and utilities when referenced: import java.util.List;, import java.util.ArrayList;, import java.util.Arrays;, import java.util.Optional;.",
+      "Always import java.math.BigDecimal when using BigDecimal monetary or precision types.",
+      "Always import io.quarkus.test.junit.mockito.InjectMock when using @InjectMock in Quarkus tests.",
+      "When using Hamcrest matchers in REST-assured (is(), equalTo(), notNullValue()), use: import static org.hamcrest.CoreMatchers.*;.",
+      "In PanacheRepository, repository.persist(entity) has void return type (unlike Spring Data's save()). NEVER assign the result of persist() to a variable (e.g. Entity saved = repo.persist(e) is a compilation error). If using Mockito, do not stub repo.persist() with when(...).thenReturn(...); use doNothing().when(repo).persist(...) or test against real PanacheRepository with @Inject and @Transactional.",
+      "In PanacheRepository, repository.findById(id) returns Entity directly (or null), NOT an Optional. NEVER call .get() on repository.findById(id). If you need an Optional, use repository.findByIdOptional(id).",
+      "When testing or instantiating entities, use ONLY the exact field names and getter/setter methods declared in the Entity Definition. NEVER invent attributes or methods that do not exist."
+    ],
+    "templates": {
+      "resource": "templates/quarkus/Resource.java.jinja",
+      "entity": "templates/quarkus/Entity.java.jinja",
+      "repository": "templates/quarkus/Repository.java.jinja",
+      "test": "templates/quarkus/ResourceTest.java.jinja",
+      "repository_test": "templates/quarkus/RepositoryTest.java.jinja"
+    },
+    "canonical_examples": {
+      "rest_resource_crud": "@GET\n@Path(\"/{id}\")\n@Produces(MediaType.APPLICATION_JSON)\npublic Response getById(@PathParam(\"id\") Long id) {\n    return repository.findByIdOptional(id)\n        .map(entity -> Response.ok(entity).build())\n        .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());\n}\n\n@PUT\n@Path(\"/{id}\")\n@Transactional\npublic Response update(@PathParam(\"id\") Long id, @Valid @NotNull Entity updated) {\n    Entity existing = repository.findById(id);\n    if (existing == null) {\n        return Response.status(Response.Status.NOT_FOUND).build();\n    }\n    // Copy editable fields from updated to existing entity\n    // existing.setName(updated.getName());\n    return Response.ok(existing).build();\n}\n\n@DELETE\n@Path(\"/{id}\")\n@Transactional\npublic Response delete(@PathParam(\"id\") Long id) {\n    boolean deleted = repository.deleteById(id);\n    if (!deleted) {\n        return Response.status(Response.Status.NOT_FOUND).build();\n    }\n    return Response.status(Response.Status.NO_CONTENT).build();\n}\n",
+      "repository_clean": "package com.example.repository;\nimport com.example.Entity;\nimport io.quarkus.hibernate.orm.panache.PanacheRepository;\nimport jakarta.enterprise.context.ApplicationScoped;\n\n@ApplicationScoped\npublic class EntityRepository implements PanacheRepository<Entity> {\n    // Built-in methods (persist, listAll, findByIdOptional, findById, deleteById) are already provided.\n}\n",
+      "resource_test_rest_assured": "package com.example.resource;\n\nimport io.quarkus.test.junit.QuarkusTest;\nimport org.junit.jupiter.api.Test;\nimport static io.restassured.RestAssured.given;\n\n@QuarkusTest\npublic class EntityResourceTest {\n\n    @Test\n    public void testGetEndpoint() {\n        given()\n            .when().get(\"/api/entity\")\n            .then()\n            .statusCode(200);\n    }\n}\n",
+      "repository_test": "package com.example.repository;\n\nimport io.quarkus.test.junit.QuarkusTest;\nimport jakarta.inject.Inject;\nimport jakarta.transaction.Transactional;\nimport org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.*;\n\n@QuarkusTest\npublic class EntityRepositoryTest {\n\n    @Inject\n    EntityRepository repository;\n\n    @Test\n    @Transactional\n    public void testPersistAndFind() {\n        Entity entity = new Entity();\n        // Note: Panache persist() returns void!\n        repository.persist(entity);\n        assertNotNull(entity.getId());\n        assertTrue(repository.findByIdOptional(entity.getId()).isPresent());\n    }\n}\n"
+    },
+    "type_imports": {
+      "Timestamp": "java.sql.Timestamp",
+      "NotNull": "jakarta.validation.constraints.NotNull",
+      "NotBlank": "jakarta.validation.constraints.NotBlank",
+      "BigDecimal": "java.math.BigDecimal",
+      "LocalDate": "java.time.LocalDate",
+      "LocalDateTime": "java.time.LocalDateTime",
+      "Instant": "java.time.Instant",
+      "UUID": "java.util.UUID",
+      "Page": "io.quarkus.panache.common.Page",
+      "Sort": "io.quarkus.panache.common.Sort",
+      "Parameters": "io.quarkus.panache.common.Parameters",
+      "PanacheRepository": "io.quarkus.hibernate.orm.panache.PanacheRepository",
+      "PanacheRepositoryBase": "io.quarkus.hibernate.orm.panache.PanacheRepositoryBase",
+      "PanacheEntity": "io.quarkus.hibernate.orm.panache.PanacheEntity",
+      "PanacheEntityBase": "io.quarkus.hibernate.orm.panache.PanacheEntityBase",
+      "ApplicationScoped": "jakarta.enterprise.context.ApplicationScoped",
+      "Inject": "jakarta.inject.Inject",
+      "Transactional": "jakarta.transaction.Transactional",
+      "Valid": "jakarta.validation.Valid",
+      "Entity": "jakarta.persistence.Entity",
+      "Table": "jakarta.persistence.Table",
+      "Id": "jakarta.persistence.Id",
+      "GeneratedValue": "jakarta.persistence.GeneratedValue",
+      "GenerationType": "jakarta.persistence.GenerationType",
+      "Column": "jakarta.persistence.Column",
+      "Response": "jakarta.ws.rs.core.Response",
+      "MediaType": "jakarta.ws.rs.core.MediaType",
+      "URI": "java.net.URI",
+      "List": "java.util.List",
+      "ArrayList": "java.util.ArrayList",
+      "Optional": "java.util.Optional",
+      "Map": "java.util.Map",
+      "HashMap": "java.util.HashMap",
+      "Set": "java.util.Set",
+      "Objects": "java.util.Objects",
+      "QuarkusTest": "io.quarkus.test.junit.QuarkusTest",
+      "Test": "org.junit.jupiter.api.Test",
+      "BeforeEach": "org.junit.jupiter.api.BeforeEach",
+      "ContentType": "io.restassured.http.ContentType"
+    },
+    "scaffold": {
+      "tool": "quarkus-maven-plugin",
+      "tool_version": "3.15.1",
+      "command_template": [
+        "mvn",
+        "io.quarkus.platform:quarkus-maven-plugin:{tool_version}:create",
+        "-DprojectGroupId={group_id}",
+        "-DprojectArtifactId={artifact_id}",
+        "-DprojectVersion=1.0.0-SNAPSHOT",
+        "-DclassName={package_name}.HealthResource",
+        "-DjavaVersion={java_version}",
+        "-Dextensions={extensions}",
+        "-DnoCode"
+      ],
+      "base_extensions": [
+        "io.quarkus:quarkus-arc"
+      ],
+      "allowed_extensions": [
+        "io.quarkus:quarkus-arc",
+        "io.quarkus:quarkus-rest-jackson",
+        "io.quarkus:quarkus-hibernate-orm-panache",
+        "io.quarkus:quarkus-jdbc-postgresql",
+        "io.quarkus:quarkus-jdbc-mysql",
+        "io.quarkus:quarkus-jdbc-h2",
+        "io.quarkus:quarkus-hibernate-validator",
+        "io.quarkus:quarkus-smallrye-reactive-messaging-kafka",
+        "io.quarkus:quarkus-smallrye-health",
+        "io.quarkus:quarkus-micrometer-registry-prometheus",
+        "io.quarkus:quarkus-opentelemetry",
+        "io.quarkus:quarkus-smallrye-jwt",
+        "io.quarkus:quarkus-smallrye-jwt-build",
+        "io.quarkus:quarkus-oidc"
+      ],
+      "extension_map": {
+        "rest": [
+          "io.quarkus:quarkus-rest-jackson"
+        ],
+        "persistence": [
+          "io.quarkus:quarkus-hibernate-orm-panache"
+        ],
+        "postgresql": [
+          "io.quarkus:quarkus-jdbc-postgresql"
+        ],
+        "mysql": [
+          "io.quarkus:quarkus-jdbc-mysql"
+        ],
+        "h2": [
+          "io.quarkus:quarkus-jdbc-h2"
+        ],
+        "validation": [
+          "io.quarkus:quarkus-hibernate-validator"
+        ],
+        "kafka": [
+          "io.quarkus:quarkus-smallrye-reactive-messaging-kafka"
+        ],
+        "health": [
+          "io.quarkus:quarkus-smallrye-health"
+        ],
+        "metrics": [
+          "io.quarkus:quarkus-micrometer-registry-prometheus"
+        ],
+        "otel": [
+          "io.quarkus:quarkus-opentelemetry"
+        ],
+        "security_jwt": [
+          "io.quarkus:quarkus-smallrye-jwt",
+          "io.quarkus:quarkus-smallrye-jwt-build"
+        ],
+        "security_oidc": [
+          "io.quarkus:quarkus-oidc"
+        ]
+      }
+    }
+  },
+  "stage": "done",
+  "history": [
+    {
+      "stage": "validate",
+      "attempts": 0
+    },
+    {
+      "stage": "generate",
+      "attempts": 0
+    },
+    {
+      "stage": "verify",
+      "attempts": 0
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+# AgentIA v2 - one container per agent, orchestrated over HTTP by the LangGraph orchestrator.
+# Deployable as-is with `docker compose up --build` or Openship (see openship.json).
+# Services talk to each other by service name; no volume is shared between services:
+# the orchestrator owns workspaces/state, and the verifier receives the files in each request.
+#
+# LLM: set GEMINI_API_KEY (default provider), or LLM_PROVIDER=local to use Ollama on the host
+# (CONTAINER_LOCAL_LLM_ENDPOINT, default http://host.docker.internal:11434), or LLM_PROVIDER=openai + OPENAI_API_KEY.
+
+x-agent-env: &agent-env
+  AGENT_GATEWAY_API_KEY: ${AGENT_GATEWAY_API_KEY:-}
+  LLM_PROVIDER: ${LLM_PROVIDER:-}
+  LLM_MODEL: ${LLM_MODEL:-}
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_API_BASE: ${OPENAI_API_BASE:-}
+  # Containers reach a host Ollama through host.docker.internal (independent of the local LOCAL_LLM_ENDPOINT)
+  LOCAL_LLM_ENDPOINT: ${CONTAINER_LOCAL_LLM_ENDPOINT:-http://host.docker.internal:11434}
+
+x-python-health: &python-health
+  interval: 15s
+  timeout: 5s
+  retries: 5
+  start_period: 20s
+
+services:
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      <<: *agent-env
+      SERVICE_MODULE: app.main:create_app
+      UVICORN_EXTRA: --factory
+      PORT: "8000"
+      ORCHESTRATOR_API_KEY: ${ORCHESTRATOR_API_KEY:-secret}
+      ORCHESTRATOR_ALLOW_PUBLIC_READ: ${ORCHESTRATOR_ALLOW_PUBLIC_READ:-1}
+      ORCHESTRATOR_DATABASE_PATH: /data/workflow-state/runs.db
+      BLUEPRINT_VALIDATOR_URL: http://validator:8003
+      GENERATOR_URL: http://generator:8004
+      VERIFIER_URL: http://verifier:8001
+      REPAIR_URL: http://repair:8002
+      WORKFLOW_STATE_DIR: /data/workflow-state
+      AGENTIA_WORKSPACE_ROOT: /data/workspaces
+      AGENTIA_MAX_REPAIR_ATTEMPTS: ${AGENTIA_MAX_REPAIR_ATTEMPTS:-3}
+      VERIFIER_TIMEOUT_SECONDS: ${VERIFIER_TIMEOUT_SECONDS:-900}
+      AGENT_CLIENT_TIMEOUT_SECONDS: ${AGENT_CLIENT_TIMEOUT_SECONDS:-960}
+    ports:
+      - "${ORCHESTRATOR_PORT:-8000}:8000"
+    volumes:
+      - orchestrator-data:/data
+    depends_on:
+      - validator
+      - generator
+      - verifier
+      - repair
+    healthcheck:
+      <<: *python-health
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+    restart: unless-stopped
+
+  validator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      <<: *agent-env
+      SERVICE_MODULE: services.validator_service:app
+      UVICORN_EXTRA: ""
+      PORT: "8003"
+    healthcheck:
+      <<: *python-health
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8003/health', timeout=3)"]
+    restart: unless-stopped
+
+  generator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      <<: *agent-env
+      SERVICE_MODULE: services.generator_service:app
+      UVICORN_EXTRA: ""
+      PORT: "8004"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      <<: *python-health
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8004/health', timeout=3)"]
+    restart: unless-stopped
+
+  repair:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      <<: *agent-env
+      SERVICE_MODULE: services.repair_service:app
+      UVICORN_EXTRA: ""
+      PORT: "8002"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      <<: *python-health
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8002/health', timeout=3)"]
+    restart: unless-stopped
+
+  verifier:
+    build:
+      context: .
+      dockerfile: Dockerfile.verifier
+    environment:
+      AGENT_GATEWAY_API_KEY: ${AGENT_GATEWAY_API_KEY:-}
+      SERVICE_MODULE: services.verifier_service:app
+      UVICORN_EXTRA: ""
+      PORT: "8001"
+      VERIFIER_RUNNER: host
+      VERIFIER_SCRATCH_DIR: /data/verify
+    volumes:
+      # Maven cache only (speeds up rebuilds); safe to lose
+      - maven-cache:/home/appuser/.m2
+    healthcheck:
+      <<: *python-health
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3)"]
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      ORCHESTRATOR_UPSTREAM: http://orchestrator:8000
+    ports:
+      - "${WEB_PORT:-3000}:80"
+    depends_on:
+      - orchestrator
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  orchestrator-data:
+  maven-cache:

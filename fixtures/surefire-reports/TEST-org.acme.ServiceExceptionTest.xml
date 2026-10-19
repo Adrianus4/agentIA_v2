@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="org.acme.ServiceExceptionTest" time="0.12" tests="1" errors="1" skipped="0" failures="0">
+  <testcase name="testNullService" classname="org.acme.ServiceExceptionTest" time="0.08">
+    <error message="Cannot invoke &quot;org.acme.GreetingService.greet()&quot; because &quot;this.service&quot; is null" type="java.lang.NullPointerException"><![CDATA[java.lang.NullPointerException: Cannot invoke "org.acme.GreetingService.greet()" because "this.service" is null
+	at org.acme.ServiceExceptionTest.testNullService(ServiceExceptionTest.java:18)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+]]></error>
+  </testcase>
+</testsuite>

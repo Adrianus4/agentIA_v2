@@ -1,0 +1,159 @@
+{
+  "fixtureId": "solution-h2",
+  "version": "1.0.0",
+  "solutionRequest": {
+    "solution": {
+      "name": "order-inventory-solution",
+      "business_objective": "Two-service H2 solution fixture without Docker or external brokers.",
+      "observability": {
+        "enabled": false,
+        "health": false,
+        "metrics": false,
+        "tracing": false,
+        "structured_logging": false,
+        "trace_id_header": "X-Trace-Id"
+      },
+      "security": {
+        "enabled": false,
+        "mode": "NONE",
+        "service_to_service_auth": false,
+        "protect_api": false,
+        "roles": []
+      },
+      "deployment": {
+        "docker": false,
+        "kubernetes": false,
+        "openshift": false,
+        "replicas": 1,
+        "namespace": "default"
+      },
+      "shared_events": [],
+      "services": [
+        {
+          "service_name": "order-service",
+          "package_name": "com.agentia.qa.orders",
+          "business_objective": "Manage customer orders in H2.",
+          "technical_matrix": {
+            "database": "H2",
+            "messaging": "NONE",
+            "scope": "LOW"
+          },
+          "user_stories": [
+            {
+              "title": "Create and query orders",
+              "given": "An order payload with orderNumber and totalAmount",
+              "when": "A client sends POST /api/orderrecord",
+              "then": "The order is persisted and returned with HTTP 201",
+              "acceptance_criteria": [
+                "Orders can be created, listed, updated, and deleted."
+              ]
+            }
+          ],
+          "domain_models": [
+            {
+              "name": "OrderRecord",
+              "table_name": "order_records",
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "Long",
+                  "nullable": false,
+                  "constraints": []
+                },
+                {
+                  "name": "orderNumber",
+                  "type": "String",
+                  "nullable": false,
+                  "constraints": []
+                },
+                {
+                  "name": "totalAmount",
+                  "type": "BigDecimal",
+                  "nullable": false,
+                  "constraints": []
+                }
+              ]
+            }
+          ],
+          "api_endpoints": [],
+          "events": [],
+          "depends_on": []
+        },
+        {
+          "service_name": "inventory-service",
+          "package_name": "com.agentia.qa.inventory",
+          "business_objective": "Track warehouse stock items in H2.",
+          "technical_matrix": {
+            "database": "H2",
+            "messaging": "NONE",
+            "scope": "LOW"
+          },
+          "user_stories": [
+            {
+              "title": "Track warehouse items",
+              "given": "A stock item payload with itemCode and warehouseName",
+              "when": "A client sends POST /api/stockitem",
+              "then": "The stock item is persisted and returned with HTTP 201",
+              "acceptance_criteria": [
+                "Stock items can be created, listed, updated, and deleted."
+              ]
+            }
+          ],
+          "domain_models": [
+            {
+              "name": "StockItem",
+              "table_name": "stock_items",
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "Long",
+                  "nullable": false,
+                  "constraints": []
+                },
+                {
+                  "name": "itemCode",
+                  "type": "String",
+                  "nullable": false,
+                  "constraints": []
+                },
+                {
+                  "name": "warehouseName",
+                  "type": "String",
+                  "nullable": false,
+                  "constraints": []
+                }
+              ]
+            }
+          ],
+          "api_endpoints": [],
+          "events": [],
+          "depends_on": []
+        }
+      ]
+    }
+  },
+  "expectations": {
+    "services": {
+      "order-service": {
+        "requiredFiles": [
+          "pom.xml",
+          "src/main/resources/application.properties",
+          "src/main/java/com/agentia/qa/orders/OrderRecord.java",
+          "src/main/java/com/agentia/qa/orders/resource/OrderRecordResource.java"
+        ],
+        "oracleTestFile": "OracleOrderServiceAcceptanceTest.java",
+        "oracleTestRelativePath": "src/test/java/com/agentia/qa/orders/resource/OracleOrderServiceAcceptanceTest.java"
+      },
+      "inventory-service": {
+        "requiredFiles": [
+          "pom.xml",
+          "src/main/resources/application.properties",
+          "src/main/java/com/agentia/qa/inventory/StockItem.java",
+          "src/main/java/com/agentia/qa/inventory/resource/StockItemResource.java"
+        ],
+        "oracleTestFile": "OracleInventoryServiceAcceptanceTest.java",
+        "oracleTestRelativePath": "src/test/java/com/agentia/qa/inventory/resource/OracleInventoryServiceAcceptanceTest.java"
+      }
+    }
+  }
+}

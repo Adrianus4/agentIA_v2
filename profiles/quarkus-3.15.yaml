@@ -1,0 +1,318 @@
+id: "quarkus-3.15"
+framework: "quarkus"
+framework_version: "3.15"
+profile_revision: 1
+java_version: "21"
+build_tool: "maven"
+enabled: true
+baseline_evidence: "Quarkus 3.15 LTS with Java 21 baseline for enterprise microservices"
+instruction_set_revision: "v1"
+
+concepts:
+  mock_in_test:
+    annotations:
+      - "@InjectMock"
+    imports:
+      - "io.quarkus.test.junit.mockito.InjectMock"
+  dependency_injection:
+    annotations:
+      - "@Inject"
+      - "@ApplicationScoped"
+    imports:
+      - "jakarta.inject.Inject"
+      - "jakarta.enterprise.context.ApplicationScoped"
+  rest_endpoint:
+    annotations:
+      - "@Path"
+      - "@GET"
+      - "@POST"
+      - "@PUT"
+      - "@DELETE"
+      - "@Produces"
+      - "@Consumes"
+      - "@Transactional"
+    imports:
+      - "jakarta.ws.rs.Path"
+      - "jakarta.ws.rs.GET"
+      - "jakarta.ws.rs.POST"
+      - "jakarta.ws.rs.PUT"
+      - "jakarta.ws.rs.DELETE"
+      - "jakarta.ws.rs.Produces"
+      - "jakarta.ws.rs.Consumes"
+      - "jakarta.ws.rs.core.MediaType"
+      - "jakarta.ws.rs.core.Response"
+      - "jakarta.transaction.Transactional"
+  orm_entity:
+    annotations:
+      - "@Entity"
+      - "@Table"
+      - "@Id"
+      - "@GeneratedValue"
+    imports:
+      - "jakarta.persistence.Entity"
+      - "jakarta.persistence.Table"
+      - "jakarta.persistence.Id"
+      - "jakarta.persistence.GeneratedValue"
+      - "jakarta.validation.constraints.NotNull"
+  transactional:
+    annotations:
+      - "@Transactional"
+    imports:
+      - "jakarta.transaction.Transactional"
+
+config:
+  file_path: "src/main/resources/application.properties"
+  format: "properties"
+  default_port: 8080
+  properties:
+    quarkus.http.port: 8080
+    quarkus.log.level: "INFO"
+
+test_style:
+  class_annotations:
+    - "@QuarkusTest"
+  imports:
+    - "io.quarkus.test.junit.QuarkusTest"
+    - "org.junit.jupiter.api.Test"
+    - "static org.junit.jupiter.api.Assertions.*"
+    - "static org.mockito.Mockito.*"
+    - "io.quarkus.test.junit.mockito.InjectMock"
+    - "static io.restassured.RestAssured.given"
+    - "static org.hamcrest.CoreMatchers.*"
+    - "java.util.*"
+    - "java.math.BigDecimal"
+  assertion_library: "junit-jupiter"
+
+verify_commands:
+  compile: "mvn clean compile -DskipTests"
+  test: "mvn test"
+  package: "mvn package -DskipTests"
+
+forbidden_imports:
+  - "org.springframework."
+  - "org.junit.Test"
+  - "org.junit.Assert"
+  - "javax.inject."
+  - "javax.ws.rs."
+  - "javax.persistence."
+  - "javax.transaction."
+
+allowed_exceptions:
+  - "jakarta.ws.rs.WebApplicationException"
+  - "jakarta.ws.rs.NotFoundException"
+  - "jakarta.ws.rs.BadRequestException"
+  - "java.lang.IllegalArgumentException"
+  - "java.lang.IllegalStateException"
+
+pitfalls:
+  - "Never use @MockBean or @Autowired from Spring; use @InjectMock and @Inject."
+  - "Quarkus 3.15 uses Jakarta EE 10 (jakarta.* namespace), never use javax.* packages."
+  - "Field injection in Quarkus tests requires package-private or public fields, not private."
+  - "Panache active record methods must not conflict with repository pattern usage."
+  - "In PanacheRepository, built-in methods (listAll, findByIdOptional, persist, deleteById) are already provided. Do not re-declare conflicting methods like List findAll() or void deleteById(). Keep Panache repository class empty unless custom query methods are required."
+  - "In REST resources with Panache repositories, use repository.listAll() instead of repository.findAll()."
+  - "PanacheRepository does not have existsById(id) or exists(id). For existence check, check findByIdOptional(id).isEmpty() or findById(id) == null, or use boolean deleteById(id)."
+  - "In Quarkus REST tests, test endpoints using RestAssured (given().when().get(...)) or inject the Panache repository directly. Do NOT invent non-existent service classes (e.g. EntityService)."
+  - "When using JUnit assertions (assertTrue, assertEquals) or Mockito methods (when, verify), use static imports: 'import static org.junit.jupiter.api.Assertions.*;' and 'import static org.mockito.Mockito.*;'."
+  - "Always import Java collections and utilities when referenced: import java.util.List;, import java.util.ArrayList;, import java.util.Arrays;, import java.util.Optional;."
+  - "Always import java.math.BigDecimal when using BigDecimal monetary or precision types."
+  - "Always import io.quarkus.test.junit.mockito.InjectMock when using @InjectMock in Quarkus tests."
+  - "When using Hamcrest matchers in REST-assured (is(), equalTo(), notNullValue()), use: import static org.hamcrest.CoreMatchers.*;."
+  - "In PanacheRepository, repository.persist(entity) has void return type (unlike Spring Data's save()). NEVER assign the result of persist() to a variable (e.g. Entity saved = repo.persist(e) is a compilation error). If using Mockito, do not stub repo.persist() with when(...).thenReturn(...); use doNothing().when(repo).persist(...) or test against real PanacheRepository with @Inject and @Transactional."
+  - "In PanacheRepository, repository.findById(id) returns Entity directly (or null), NOT an Optional. NEVER call .get() on repository.findById(id). If you need an Optional, use repository.findByIdOptional(id)."
+  - "When testing or instantiating entities, use ONLY the exact field names and getter/setter methods declared in the Entity Definition. NEVER invent attributes or methods that do not exist."
+
+templates:
+  resource: "templates/quarkus/Resource.java.jinja"
+  entity: "templates/quarkus/Entity.java.jinja"
+  repository: "templates/quarkus/Repository.java.jinja"
+  test: "templates/quarkus/ResourceTest.java.jinja"
+  repository_test: "templates/quarkus/RepositoryTest.java.jinja"
+
+canonical_examples:
+  rest_resource_crud: |
+    @GET
+    @Path("/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getById(@PathParam("id") Long id) {
+        return repository.findByIdOptional(id)
+            .map(entity -> Response.ok(entity).build())
+            .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
+    }
+
+    @PUT
+    @Path("/{id}")
+    @Transactional
+    public Response update(@PathParam("id") Long id, @Valid @NotNull Entity updated) {
+        Entity existing = repository.findById(id);
+        if (existing == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        // Copy editable fields from updated to existing entity
+        // existing.setName(updated.getName());
+        return Response.ok(existing).build();
+    }
+
+    @DELETE
+    @Path("/{id}")
+    @Transactional
+    public Response delete(@PathParam("id") Long id) {
+        boolean deleted = repository.deleteById(id);
+        if (!deleted) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.status(Response.Status.NO_CONTENT).build();
+    }
+  repository_clean: |
+    package com.example.repository;
+    import com.example.Entity;
+    import io.quarkus.hibernate.orm.panache.PanacheRepository;
+    import jakarta.enterprise.context.ApplicationScoped;
+
+    @ApplicationScoped
+    public class EntityRepository implements PanacheRepository<Entity> {
+        // Built-in methods (persist, listAll, findByIdOptional, findById, deleteById) are already provided.
+    }
+  resource_test_rest_assured: |
+    package com.example.resource;
+
+    import io.quarkus.test.junit.QuarkusTest;
+    import org.junit.jupiter.api.Test;
+    import static io.restassured.RestAssured.given;
+
+    @QuarkusTest
+    public class EntityResourceTest {
+
+        @Test
+        public void testGetEndpoint() {
+            given()
+                .when().get("/api/entity")
+                .then()
+                .statusCode(200);
+        }
+    }
+  repository_test: |
+    package com.example.repository;
+
+    import io.quarkus.test.junit.QuarkusTest;
+    import jakarta.inject.Inject;
+    import jakarta.transaction.Transactional;
+    import org.junit.jupiter.api.Test;
+    import static org.junit.jupiter.api.Assertions.*;
+
+    @QuarkusTest
+    public class EntityRepositoryTest {
+
+        @Inject
+        EntityRepository repository;
+
+        @Test
+        @Transactional
+        public void testPersistAndFind() {
+            Entity entity = new Entity();
+            // Note: Panache persist() returns void!
+            repository.persist(entity);
+            assertNotNull(entity.getId());
+            assertTrue(repository.findByIdOptional(entity.getId()).isPresent());
+        }
+    }
+
+type_imports:
+  Timestamp: "java.sql.Timestamp"
+  NotNull: "jakarta.validation.constraints.NotNull"
+  NotBlank: "jakarta.validation.constraints.NotBlank"
+  BigDecimal: "java.math.BigDecimal"
+  LocalDate: "java.time.LocalDate"
+  LocalDateTime: "java.time.LocalDateTime"
+  Instant: "java.time.Instant"
+  UUID: "java.util.UUID"
+  # Framework and JDK types used by the CRUD templates; the repair agent restores a missing
+  # import from this map deterministically before asking the LLM.
+  Page: "io.quarkus.panache.common.Page"
+  Sort: "io.quarkus.panache.common.Sort"
+  Parameters: "io.quarkus.panache.common.Parameters"
+  PanacheRepository: "io.quarkus.hibernate.orm.panache.PanacheRepository"
+  PanacheRepositoryBase: "io.quarkus.hibernate.orm.panache.PanacheRepositoryBase"
+  PanacheEntity: "io.quarkus.hibernate.orm.panache.PanacheEntity"
+  PanacheEntityBase: "io.quarkus.hibernate.orm.panache.PanacheEntityBase"
+  ApplicationScoped: "jakarta.enterprise.context.ApplicationScoped"
+  Inject: "jakarta.inject.Inject"
+  Transactional: "jakarta.transaction.Transactional"
+  Valid: "jakarta.validation.Valid"
+  Entity: "jakarta.persistence.Entity"
+  Table: "jakarta.persistence.Table"
+  Id: "jakarta.persistence.Id"
+  GeneratedValue: "jakarta.persistence.GeneratedValue"
+  GenerationType: "jakarta.persistence.GenerationType"
+  Column: "jakarta.persistence.Column"
+  Response: "jakarta.ws.rs.core.Response"
+  MediaType: "jakarta.ws.rs.core.MediaType"
+  URI: "java.net.URI"
+  List: "java.util.List"
+  ArrayList: "java.util.ArrayList"
+  Optional: "java.util.Optional"
+  Map: "java.util.Map"
+  HashMap: "java.util.HashMap"
+  Set: "java.util.Set"
+  Objects: "java.util.Objects"
+  QuarkusTest: "io.quarkus.test.junit.QuarkusTest"
+  Test: "org.junit.jupiter.api.Test"
+  BeforeEach: "org.junit.jupiter.api.BeforeEach"
+  ContentType: "io.restassured.http.ContentType"
+
+scaffold:
+  tool: "quarkus-maven-plugin"
+  tool_version: "3.15.1"
+  command_template:
+    - "mvn"
+    - "io.quarkus.platform:quarkus-maven-plugin:{tool_version}:create"
+    - "-DprojectGroupId={group_id}"
+    - "-DprojectArtifactId={artifact_id}"
+    - "-DprojectVersion=1.0.0-SNAPSHOT"
+    - "-DclassName={package_name}.HealthResource"
+    - "-DjavaVersion={java_version}"
+    - "-Dextensions={extensions}"
+    - "-DnoCode"
+  base_extensions:
+    - "io.quarkus:quarkus-arc"
+  allowed_extensions:
+    - "io.quarkus:quarkus-arc"
+    - "io.quarkus:quarkus-rest-jackson"
+    - "io.quarkus:quarkus-hibernate-orm-panache"
+    - "io.quarkus:quarkus-jdbc-postgresql"
+    - "io.quarkus:quarkus-jdbc-mysql"
+    - "io.quarkus:quarkus-jdbc-h2"
+    - "io.quarkus:quarkus-hibernate-validator"
+    - "io.quarkus:quarkus-smallrye-reactive-messaging-kafka"
+    - "io.quarkus:quarkus-smallrye-health"
+    - "io.quarkus:quarkus-micrometer-registry-prometheus"
+    - "io.quarkus:quarkus-opentelemetry"
+    - "io.quarkus:quarkus-smallrye-jwt"
+    - "io.quarkus:quarkus-smallrye-jwt-build"
+    - "io.quarkus:quarkus-oidc"
+  extension_map:
+    rest:
+      - "io.quarkus:quarkus-rest-jackson"
+    persistence:
+      - "io.quarkus:quarkus-hibernate-orm-panache"
+    postgresql:
+      - "io.quarkus:quarkus-jdbc-postgresql"
+    mysql:
+      - "io.quarkus:quarkus-jdbc-mysql"
+    h2:
+      - "io.quarkus:quarkus-jdbc-h2"
+    validation:
+      - "io.quarkus:quarkus-hibernate-validator"
+    kafka:
+      - "io.quarkus:quarkus-smallrye-reactive-messaging-kafka"
+    health:
+      - "io.quarkus:quarkus-smallrye-health"
+    metrics:
+      - "io.quarkus:quarkus-micrometer-registry-prometheus"
+    otel:
+      - "io.quarkus:quarkus-opentelemetry"
+    security_jwt:
+      - "io.quarkus:quarkus-smallrye-jwt"
+      - "io.quarkus:quarkus-smallrye-jwt-build"
+    security_oidc:
+      - "io.quarkus:quarkus-oidc"

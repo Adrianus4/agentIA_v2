@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="org.acme.CleanTest" time="0.05" tests="3" errors="0" skipped="0" failures="0">
+  <testcase name="testA" classname="org.acme.CleanTest" time="0.01"/>
+  <testcase name="testB" classname="org.acme.CleanTest" time="0.02"/>
+  <testcase name="testC" classname="org.acme.CleanTest" time="0.01"/>
+</testsuite>

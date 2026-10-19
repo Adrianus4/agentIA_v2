@@ -1,0 +1,34 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+env/
+venv/
+ENV/
+
+# Testing & Type Checking
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node & Frontend
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+
+# Databases & Runtime
+*.db
+*.db-journal
+.agentia-runtime/
+
+# Models & Local Tools
+models/
+tools/
+*.gguf
+*.bin
+*.tar.gz
+*.zip
+

@@ -1,0 +1,11 @@
+# Runtime dependencies for the orchestrator and agent services (container images and pip installs).
+# Kept in sync with [project.dependencies] in pyproject.toml.
+aiosqlite==0.22.1
+fastapi==0.143.2
+google-generativeai==0.8.6
+httpx==0.28.1
+Jinja2==3.1.6
+langgraph==1.2.15
+pydantic==2.14.1
+PyYAML==6.0.3
+uvicorn[standard]==0.54.0

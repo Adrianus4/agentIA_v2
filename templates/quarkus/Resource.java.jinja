@@ -1,0 +1,84 @@
+package {{ package_name }}.resource;
+
+import {{ package_name }}.{{ entity_name }};
+import {{ package_name }}.repository.{{ entity_name }}Repository;
+import io.quarkus.panache.common.Page;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import java.net.URI;
+import java.util.List;
+import java.util.UUID;
+
+@Path("{{ resource_path }}")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public class {{ entity_name }}Resource {
+
+    @Inject
+    {{ entity_name }}Repository repository;
+
+    @GET
+    public List<{{ entity_name }}> list(
+        @QueryParam("page") @DefaultValue("0") int page,
+        @QueryParam("size") @DefaultValue("20") int size
+    ) {
+        if (size <= 0) {
+            return repository.listAll();
+        }
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(size, 100);
+        return repository.findAll().page(Page.of(safePage, safeSize)).list();
+    }
+
+    @GET
+    @Path("/{id}")
+    public Response getById(@PathParam("id") {{ id_type|default('Long') }} id) {
+        return repository.findByIdOptional(id)
+            .map(entity -> Response.ok(entity).build())
+            .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
+    }
+
+    @POST
+    @Transactional
+    public Response create(@Valid @NotNull {{ entity_name }} entity) {
+{% if id_generated|default(true) %}
+        entity.set{{ id_pascal_name|default('Id') }}(null);
+{% endif %}
+        repository.persist(entity);
+        return Response.created(URI.create("{{ resource_path }}/" + entity.get{{ id_pascal_name|default('Id') }}())).entity(entity).build();
+    }
+
+    @PUT
+    @Path("/{id}")
+    @Transactional
+    public Response update(@PathParam("id") {{ id_type|default('Long') }} id, @Valid @NotNull {{ entity_name }} updated) {
+        {{ entity_name }} existing = repository.findById(id);
+        if (existing == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+{% for field in fields %}
+{% if not field.primary_key %}
+        if (updated.get{{ field.pascal_name }}() != null) {
+            existing.set{{ field.pascal_name }}(updated.get{{ field.pascal_name }}());
+        }
+{% endif %}
+{% endfor %}
+        return Response.ok(existing).build();
+    }
+
+    @DELETE
+    @Path("/{id}")
+    @Transactional
+    public Response delete(@PathParam("id") {{ id_type|default('Long') }} id) {
+        boolean deleted = repository.deleteById(id);
+        if (!deleted) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.status(Response.Status.NO_CONTENT).build();
+    }
+}

@@ -1,0 +1,19 @@
+package {{ package_name }}.repository;
+
+import {{ package_name }}.{{ entity_name }};
+{% if id_type is defined and id_type != 'Long' %}
+import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
+import jakarta.enterprise.context.ApplicationScoped;
+import java.util.UUID;
+
+@ApplicationScoped
+public class {{ entity_name }}Repository implements PanacheRepositoryBase<{{ entity_name }}, {{ id_type }}> {
+}
+{% else %}
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class {{ entity_name }}Repository implements PanacheRepository<{{ entity_name }}> {
+}
+{% endif %}

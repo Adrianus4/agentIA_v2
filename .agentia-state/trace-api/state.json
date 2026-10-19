@@ -1,0 +1,8 @@
+{
+  "trace_id": "trace-api",
+  "attempts": 1,
+  "outcome": "SUCCESS",
+  "validation": null,
+  "verification": null,
+  "repair": null
+}

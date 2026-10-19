@@ -1,0 +1,4 @@
+# Preserve Linux line endings when checking out launchers on Windows.
+*.sh text eol=lf
+# cmd.exe needs CRLF for labels and call :subroutine to work reliably.
+*.bat text eol=crlf

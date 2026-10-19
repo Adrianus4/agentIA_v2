@@ -1,0 +1,85 @@
+package {{ package_name }}.resource;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.http.ContentType;
+import org.junit.jupiter.api.Test;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.*;
+
+@QuarkusTest
+public class {{ entity_name }}ResourceTest {
+
+    @Test
+    public void testListEndpoint() {
+        given()
+            .when().get("{{ resource_path }}")
+            .then()
+            .statusCode(200);
+    }
+
+    @Test
+    public void testGetNotFoundEndpoint() {
+        given()
+            .when().get("{{ resource_path }}/{{ not_found_id_literal|default('999999') }}")
+            .then()
+            .statusCode(404);
+    }
+
+    @Test
+    public void testCreateGetUpdateAndDeleteLifecycle() {
+        Object createdId = given()
+            .contentType(ContentType.JSON)
+            .body("{{ sample_json_payload|default('{}') }}")
+            .when().post("{{ resource_path }}")
+            .then()
+            .statusCode(201)
+            .body("{{ id_name|default('id') }}", notNullValue())
+            .extract().path("{{ id_name|default('id') }}");
+
+        given()
+            .when().get("{{ resource_path }}/" + createdId)
+            .then()
+            .statusCode(200)
+            .body("{{ id_name|default('id') }}", notNullValue());
+
+        given()
+            .contentType(ContentType.JSON)
+            .body("{{ updated_json_payload|default('{}') }}")
+            .when().put("{{ resource_path }}/" + createdId)
+            .then()
+            .statusCode(200)
+{% if first_editable_string_field is defined and first_editable_string_field %}
+            .body("{{ first_editable_string_field }}", equalTo("{{ first_editable_updated_value }}"));
+{% else %}
+            .body("{{ id_name|default('id') }}", notNullValue());
+{% endif %}
+
+        given()
+            .when().delete("{{ resource_path }}/" + createdId)
+            .then()
+            .statusCode(204);
+
+        given()
+            .when().get("{{ resource_path }}/" + createdId)
+            .then()
+            .statusCode(404);
+    }
+
+    @Test
+    public void testUpdateNotFoundEndpoint() {
+        given()
+            .contentType(ContentType.JSON)
+            .body("{{ updated_json_payload|default('{}') }}")
+            .when().put("{{ resource_path }}/{{ not_found_id_literal|default('999999') }}")
+            .then()
+            .statusCode(404);
+    }
+
+    @Test
+    public void testDeleteNotFoundEndpoint() {
+        given()
+            .when().delete("{{ resource_path }}/{{ not_found_id_literal|default('999999') }}")
+            .then()
+            .statusCode(404);
+    }
+}

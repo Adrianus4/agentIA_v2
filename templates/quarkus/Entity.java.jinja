@@ -1,0 +1,49 @@
+package {{ package_name }};
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.UUID;
+
+@Entity
+@Table(name = "{{ table_name }}")
+public class {{ entity_name }} {
+
+{% for field in fields %}
+{% if field.primary_key %}
+    @Id
+{% if field.java_type == 'Long' or field.java_type == 'Integer' or field.java_type == 'long' or field.java_type == 'int' %}
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+{% elif field.java_type == 'UUID' %}
+    @GeneratedValue(strategy = GenerationType.UUID)
+{% endif %}
+{% else %}
+{% if not field.nullable and '@NotNull' not in (field.constraints|default([])) and '@NotBlank' not in (field.constraints|default([])) %}
+    @NotNull
+{% endif %}
+{% for constraint in field.constraints|default([]) %}
+    {{ constraint if constraint.startswith('@') else '@' ~ constraint }}
+{% endfor %}
+{% endif %}
+    @Column(name = "{{ field.column_name }}"{% if not field.nullable and not field.primary_key %}, nullable = false{% endif %}{% if field.unique %}, unique = true{% endif %})
+    private {{ field.java_type }} {{ field.java_name }};
+
+{% endfor %}
+    public {{ entity_name }}() {
+    }
+
+{% for field in fields %}
+    public {{ field.java_type }} get{{ field.pascal_name }}() {
+        return {{ field.java_name }};
+    }
+
+    public void set{{ field.pascal_name }}({{ field.java_type }} {{ field.java_name }}) {
+        this.{{ field.java_name }} = {{ field.java_name }};
+    }
+
+{% endfor %}
+}

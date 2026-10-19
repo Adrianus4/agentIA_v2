@@ -1,0 +1,65 @@
+package {{ package_name }}.repository;
+
+import {{ package_name }}.{{ entity_name }};
+import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.UUID;
+
+@QuarkusTest
+public class {{ entity_name }}RepositoryTest {
+
+    @Inject
+    {{ entity_name }}Repository repository;
+
+    @Test
+    @Transactional
+    public void testPersistAndFind() {
+        repository.deleteAll();
+        {{ entity_name }} entity = new {{ entity_name }}();
+{% for field in fields %}
+{% if not field.primary_key or not id_generated|default(true) %}
+{% if field.sample_value %}
+        entity.set{{ field.pascal_name }}({{ field.sample_value }});
+{% endif %}
+{% endif %}
+{% endfor %}
+
+        repository.persist(entity);
+        assertNotNull(entity.get{{ id_pascal_name|default('Id') }}());
+        assertTrue(repository.findByIdOptional(entity.get{{ id_pascal_name|default('Id') }}()).isPresent());
+        assertNotNull(repository.findById(entity.get{{ id_pascal_name|default('Id') }}()));
+        repository.deleteById(entity.get{{ id_pascal_name|default('Id') }}());
+    }
+
+    @Test
+    @Transactional
+    public void testDelete() {
+        repository.deleteAll();
+        {{ entity_name }} entity = new {{ entity_name }}();
+{% for field in fields %}
+{% if not field.primary_key or not id_generated|default(true) %}
+{% if field.updated_sample_value is defined and field.updated_sample_value %}
+        entity.set{{ field.pascal_name }}({{ field.updated_sample_value }});
+{% elif field.sample_value %}
+        entity.set{{ field.pascal_name }}({{ field.sample_value }});
+{% endif %}
+{% endif %}
+{% endfor %}
+
+        repository.persist(entity);
+        {{ id_type|default('Long') }} id = entity.get{{ id_pascal_name|default('Id') }}();
+        assertNotNull(id);
+
+        boolean deleted = repository.deleteById(id);
+        assertTrue(deleted);
+        assertTrue(repository.findByIdOptional(id).isEmpty());
+    }
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "suites": [
+    "python",
+    "platform",
+    "java",
+    "frontend",
+    "playwright"
+  ],
+  "timeout_seconds": 600,
+  "suite_timeouts": {
+    "python": 300,
+    "platform": 300,
+    "java": 600,
+    "frontend": 180,
+    "playwright": 300
+  },
+  "java_cache_dir": ".agentia-runtime/java-cache",
+  "browser_cache_dir": ".agentia-runtime/browser-cache",
+  "output_dir": ".agentia-runtime/qa"
+}

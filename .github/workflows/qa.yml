@@ -1,0 +1,325 @@
+name: QA Pipeline
+
+on:
+  pull_request:
+    branches: [ master, main ]
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Execution profile to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'core'
+          - 'platform'
+          - 'frontend'
+          - 'functional'
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    name: Core Suites (${{ matrix.os }})
+    if: github.event_name != 'workflow_dispatch' || inputs.profile == 'all' || inputs.profile == 'core'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'requirements-qa.txt'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-qa.txt
+
+      - name: Run QA Doctor
+        run: |
+          python scripts/qa.py doctor
+
+      - name: Execute Core Python suite
+        id: run_python_suite
+        shell: bash
+        run: |
+          set +e
+          python scripts/qa.py run --suite python --output-dir reports/core-${{ matrix.os }}
+          EXIT_CODE=$?
+          echo "QA_EXIT_CODE=$EXIT_CODE" >> $GITHUB_ENV
+          exit $EXIT_CODE
+
+      - name: Execute QA Agent Contract & Unit Tests
+        if: always()
+        shell: bash
+        run: |
+          pytest qa_tests/test_delivery_contracts_d01_d02.py qa_tests/test_reporting_r01_to_r04.py qa_tests/test_ai_providers_a01_to_a04.py qa_tests/test_ai_robustness_a07.py qa_tests/test_llm_suite_a05_a06.py qa_tests/test_shared_base_c02_to_c05.py qa_tests/test_ci_workflows_i01_to_i06.py
+
+      - name: Generate Job Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "### Core QA Results (${{ matrix.os }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runner OS:** \`${{ matrix.os }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python Version:** \`3.12\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Exit Code:** \`${{ env.QA_EXIT_CODE || 'FAILED_BEFORE_EXECUTION' }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ -f "reports/core-${{ matrix.os }}/manifest.json" ]; then
+            echo "- **Manifest:** \`reports/core-${{ matrix.os }}/manifest.json\` generado exitosamente." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Core Artifacts
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        if: always()
+        with:
+          name: qa-core-${{ matrix.os }}
+          path: reports/core-${{ matrix.os }}
+          retention-days: 7
+
+  platform:
+    name: Platform Real HTTP (${{ matrix.os }})
+    if: github.event_name != 'workflow_dispatch' || inputs.profile == 'all' || inputs.profile == 'platform'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'requirements-qa.txt'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-qa.txt
+
+      - name: Execute Platform HTTP Suite
+        id: run_platform_suite
+        shell: bash
+        run: |
+          set +e
+          python scripts/qa.py run --suite platform --output-dir reports/platform-${{ matrix.os }}
+          EXIT_CODE=$?
+          echo "QA_EXIT_CODE=$EXIT_CODE" >> $GITHUB_ENV
+          exit $EXIT_CODE
+
+      - name: Generate Job Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "### Platform HTTP Suite (${{ matrix.os }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runner OS:** \`${{ matrix.os }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Exit Code:** \`${{ env.QA_EXIT_CODE || 'FAILED_BEFORE_EXECUTION' }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ env.QA_EXIT_CODE }}" != "0" ]; then
+            echo "- **Diagnóstico:** Comportamiento conocido de persistencia en producto observado sin supresión." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Platform Artifacts
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        if: always()
+        with:
+          name: qa-platform-${{ matrix.os }}
+          path: reports/platform-${{ matrix.os }}
+          retention-days: 7
+
+  frontend:
+    name: Frontend React/Vitest
+    if: github.event_name != 'workflow_dispatch' || inputs.profile == 'all' || inputs.profile == 'frontend'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'requirements-qa.txt'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-qa.txt
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@1e60f620b9541d16abce96c54a30e55b911a0849 # v4.2.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install Frontend dependencies
+        run: |
+          cd frontend && npm ci
+
+      - name: Execute Frontend Suite
+        id: run_frontend_suite
+        shell: bash
+        run: |
+          set +e
+          python scripts/qa.py run --suite frontend --output-dir reports/frontend
+          EXIT_CODE=$?
+          echo "QA_EXIT_CODE=$EXIT_CODE" >> $GITHUB_ENV
+          exit $EXIT_CODE
+
+      - name: Generate Job Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "### Frontend React / Vitest Suite" >> $GITHUB_STEP_SUMMARY
+          echo "- **Node Version:** \`22\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Exit Code:** \`${{ env.QA_EXIT_CODE || 'FAILED_BEFORE_EXECUTION' }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Frontend Artifacts
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        if: always()
+        with:
+          name: qa-frontend
+          path: reports/frontend
+          retention-days: 7
+
+  functional:
+    name: Functional Java & Playwright (${{ matrix.os }})
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.profile == 'all' || inputs.profile == 'functional'))
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'requirements-qa.txt'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-qa.txt
+
+      - name: Set up Java 21
+        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4.7.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Cache Quarkus Offline Repository
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        id: java_cache
+        with:
+          path: .agentia-runtime/java-cache
+          key: quarkus-offline-${{ runner.os }}-${{ hashFiles('templates/quarkus/pom.xml', 'profiles/quarkus.yaml') }}
+          restore-keys: |
+            quarkus-offline-${{ runner.os }}-
+
+      - name: Prepare Quarkus Offline Cache
+        if: steps.java_cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p .agentia-runtime/java-cache
+          python -c "from qa_scenarios.fixtures.generator import materialize_fixture_project; import pathlib; materialize_fixture_project('crud_h2', pathlib.Path('target/warmup-crud'))"
+          mvn -f target/warmup-crud/pom.xml dependency:go-offline -Dmaven.repo.local=$(pwd)/.agentia-runtime/java-cache -B -q || true
+          mvn -f target/warmup-crud/pom.xml quarkus:go-offline -Dmaven.repo.local=$(pwd)/.agentia-runtime/java-cache -B -q || true
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@1e60f620b9541d16abce96c54a30e55b911a0849 # v4.2.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install Frontend dependencies
+        run: |
+          cd frontend && npm ci
+
+      - name: Cache Playwright Chromium
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        id: playwright_cache
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Local\ms-playwright' || '' }}
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install Playwright Chromium with system dependencies
+        if: steps.playwright_cache.outputs.cache-hit != 'true'
+        run: |
+          npx --prefix frontend playwright install --with-deps chromium
+
+      - name: Execute Java & Playwright suites
+        id: run_functional_suite
+        shell: bash
+        run: |
+          set +e
+          python scripts/qa.py run --suite java,playwright --java-cache-dir .agentia-runtime/java-cache --output-dir reports/functional-${{ matrix.os }}
+          EXIT_CODE=$?
+          echo "QA_EXIT_CODE=$EXIT_CODE" >> $GITHUB_ENV
+          exit $EXIT_CODE
+
+      - name: Generate Job Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "### Functional Suite (Java + Playwright) (${{ matrix.os }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runner OS:** \`${{ matrix.os }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Java Distribution:** Eclipse Temurin 21" >> $GITHUB_STEP_SUMMARY
+          echo "- **Exit Code:** \`${{ env.QA_EXIT_CODE || 'FAILED_BEFORE_EXECUTION' }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Functional Artifacts
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        if: always()
+        with:
+          name: qa-functional-${{ matrix.os }}
+          path: reports/functional-${{ matrix.os }}
+          retention-days: 7
+
+  summary:
+    name: Consolidated QA Summary
+    needs: [core, platform, frontend, functional]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write Consolidated Summary
+        shell: bash
+        run: |
+          echo "# Resumen Consolidado de Calidad (GitHub Actions)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Resultado | Comentarios |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | :---: | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Core (Python)** | \`${{ needs.core.result }}\` | Suites unitarias y contractuales en Windows/Linux |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Platform (HTTP)** | \`${{ needs.platform.result }}\` | Sockets loopback y servicios FastAPI reales |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Frontend (Vitest/Vite)** | \`${{ needs.frontend.result }}\` | Componentes React y build Vite |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Functional (Java+E2E)** | \`${{ needs.functional.result }}\` | Maven offline Quarkus + Playwright Chromium |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> Artefactos retenidos por 7 días. Consulte los reportes descargables adjuntos para diagnósticos detallados." >> $GITHUB_STEP_SUMMARY

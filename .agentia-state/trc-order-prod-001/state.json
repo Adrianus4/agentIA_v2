@@ -1,0 +1,125 @@
+{
+  "workspace_dir": "/tmp/agentia-workspace/review-order-service",
+  "blueprint": {
+    "name": "OrderFulfillmentService",
+    "serviceName": "order-service",
+    "packageName": "com.tcs.agentia.order",
+    "framework": "quarkus",
+    "frameworkVersion": "3.15",
+    "database": "POSTGRESQL",
+    "messaging": "KAFKA",
+    "entities": [
+      {
+        "name": "Order",
+        "tableName": "orders",
+        "primaryKey": "id",
+        "fields": [
+          {
+            "name": "id",
+            "type": "Long",
+            "nullable": false
+          },
+          {
+            "name": "customerEmail",
+            "type": "String",
+            "nullable": false
+          },
+          {
+            "name": "totalAmount",
+            "type": "BigDecimal",
+            "nullable": false
+          },
+          {
+            "name": "status",
+            "type": "String",
+            "nullable": false
+          },
+          {
+            "name": "createdAt",
+            "type": "Instant",
+            "nullable": false
+          }
+        ],
+        "table_name": "orders"
+      }
+    ],
+    "parameters": {
+      "database": "POSTGRESQL",
+      "messaging": "KAFKA",
+      "workspaceDir": "/tmp/agentia-workspace/review-order-service"
+    },
+    "userStories": []
+  },
+  "trace_id": "trc-order-prod-001",
+  "attempts": 0,
+  "validation": {
+    "valid": true,
+    "diagnostics": []
+  },
+  "verification": {
+    "success": true,
+    "exit_code": 0,
+    "timed_out": false,
+    "wall_time_seconds": 15.603,
+    "issues": [],
+    "raw_output": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ----------------< com.tcs.agentia.order:order-service >-----------------\n[INFO] Building order-service 1.0.0-SNAPSHOT\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[WARNING] The artifact io.quarkus:quarkus-smallrye-reactive-messaging-kafka:jar:3.15.1 has been relocated to io.quarkus:quarkus-messaging-kafka:jar:3.15.1: Update the artifactId in your project build file. Refer to https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9 for more information.\n[INFO] \n[INFO] --- resources:3.3.1:resources (default-resources) @ order-service ---\n[INFO] Copying 1 resource from src/main/resources to target/classes\n[INFO] \n[INFO] --- quarkus:3.15.1:generate-code (default) @ order-service ---\n[INFO] \n[INFO] --- compiler:3.13.0:compile (default-compile) @ order-service ---\n[INFO] Recompiling the module because of changed source code.\n[INFO] Compiling 3 source files with javac [debug release 21] to target/classes\n[INFO] \n[INFO] --- quarkus:3.15.1:generate-code-tests (default) @ order-service ---\n[INFO] \n[INFO] --- resources:3.3.1:testResources (default-testResources) @ order-service ---\n[INFO] skip non existing resourceDirectory /tmp/agentia-workspace/review-order-service/src/test/resources\n[INFO] \n[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ order-service ---\n[INFO] Recompiling the module because of changed dependency.\n[INFO] Compiling 2 source files with javac [debug release 21] to target/test-classes\n[INFO] \n[INFO] --- surefire:3.3.1:test (default-test) @ order-service ---\n[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider\n[INFO] \n[INFO] -------------------------------------------------------\n[INFO]  T E S T S\n[INFO] -------------------------------------------------------\n[INFO] Running com.tcs.agentia.order.repository.OrderRepositoryTest\n2026-10-16 07:37:20,353 INFO  [io.quarkus] (main) order-service 1.0.0-SNAPSHOT on JVM (powered by Quarkus 3.15.1) started in 4.201s. Listening on: http://localhost:37205\n2026-10-16 07:37:20,355 INFO  [io.quarkus] (main) Profile test activated. \n2026-10-16 07:37:20,356 INFO  [io.quarkus] (main) Installed features: [agroal, cdi, hibernate-orm, hibernate-orm-panache, hibernate-validator, jdbc-h2, jdbc-postgresql, kafka-client, messaging, messaging-kafka, narayana-jta, rest, rest-jackson, smallrye-context-propagation, vertx]\n[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.751 s -- in com.tcs.agentia.order.repository.OrderRepositoryTest\n[INFO] Running com.tcs.agentia.order.resource.OrderResourceTest\n[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.131 s -- in com.tcs.agentia.order.resource.OrderResourceTest\n2026-10-16 07:37:21,998 INFO  [io.quarkus] (main) order-service stopped in 0.024s\n[INFO] \n[INFO] Results:\n[INFO] \n[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0\n[INFO] \n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  14.639 s\n[INFO] Finished at: 2026-10-16T07:37:22-05:00\n[INFO] ------------------------------------------------------------------------\n",
+    "raw_output_truncated": false,
+    "runner_name": "LocalSubprocessRunner",
+    "image": "host"
+  },
+  "repair": null,
+  "generated_files": [
+    {
+      "path": "src/main/java/com/tcs/agentia/order/Order.java",
+      "content": "package com.tcs.agentia.order;\n\nimport jakarta.persistence.*;\nimport jakarta.validation.constraints.*;\nimport java.math.BigDecimal;\nimport java.sql.Timestamp;\nimport java.time.LocalDate;\nimport java.time.LocalDateTime;\nimport java.time.Instant;\nimport java.util.UUID;\n\n@Entity\n@Table(name = \"orders\")\npublic class Order {\n\n    @Id\n    @GeneratedValue(strategy = GenerationType.IDENTITY)\n    @Column(name = \"id\")\n    private Long id;\n\n    @NotNull\n    @Column(name = \"customerEmail\", nullable = false)\n    private String customerEmail;\n\n    @NotNull\n    @Column(name = \"totalAmount\", nullable = false)\n    private BigDecimal totalAmount;\n\n    @NotNull\n    @Column(name = \"status\", nullable = false)\n    private String status;\n\n    @NotNull\n    @Column(name = \"createdAt\", nullable = false)\n    private Instant createdAt;\n\n    public Order() {\n    }\n\n    public Long getId() {\n        return id;\n    }\n\n    public void setId(Long id) {\n        this.id = id;\n    }\n\n    public String getCustomerEmail() {\n        return customerEmail;\n    }\n\n    public void setCustomerEmail(String customerEmail) {\n        this.customerEmail = customerEmail;\n    }\n\n    public BigDecimal getTotalAmount() {\n        return totalAmount;\n    }\n\n    public void setTotalAmount(BigDecimal totalAmount) {\n        this.totalAmount = totalAmount;\n    }\n\n    public String getStatus() {\n        return status;\n    }\n\n    public void setStatus(String status) {\n        this.status = status;\n    }\n\n    public Instant getCreatedAt() {\n        return createdAt;\n    }\n\n    public void setCreatedAt(Instant createdAt) {\n        this.createdAt = createdAt;\n    }\n\n}\n",
+      "digest": "88c6e2cf817c4e554d2e758170f91105e3ca372e225bd5ff13d465b67882dc28"
+    },
+    {
+      "path": "src/main/java/com/tcs/agentia/order/repository/OrderRepository.java",
+      "content": "package com.tcs.agentia.order.repository;\n\nimport com.tcs.agentia.order.Order;\nimport io.quarkus.hibernate.orm.panache.PanacheRepository;\nimport jakarta.enterprise.context.ApplicationScoped;\n\n@ApplicationScoped\npublic class OrderRepository implements PanacheRepository<Order> {\n}\n",
+      "digest": "5d9c5310ae41f34e6cf5cdf7bedfb50b1966914a5f9f77e52fe2ec19d30b9750"
+    },
+    {
+      "path": "src/main/java/com/tcs/agentia/order/resource/OrderResource.java",
+      "content": "package com.tcs.agentia.order.resource;\n\nimport com.tcs.agentia.order.Order;\nimport com.tcs.agentia.order.repository.OrderRepository;\nimport io.quarkus.panache.common.Page;\nimport jakarta.inject.Inject;\nimport jakarta.transaction.Transactional;\nimport jakarta.validation.Valid;\nimport jakarta.validation.constraints.NotNull;\nimport jakarta.ws.rs.*;\nimport jakarta.ws.rs.core.MediaType;\nimport jakarta.ws.rs.core.Response;\nimport java.net.URI;\nimport java.util.List;\nimport java.util.UUID;\n\n@Path(\"/api/order\")\n@Produces(MediaType.APPLICATION_JSON)\n@Consumes(MediaType.APPLICATION_JSON)\npublic class OrderResource {\n\n    @Inject\n    OrderRepository repository;\n\n    @GET\n    public List<Order> list(\n        @QueryParam(\"page\") @DefaultValue(\"0\") int page,\n        @QueryParam(\"size\") @DefaultValue(\"20\") int size\n    ) {\n        if (size <= 0) {\n            return repository.listAll();\n        }\n        int safePage = Math.max(page, 0);\n        int safeSize = Math.min(size, 100);\n        return repository.findAll().page(Page.of(safePage, safeSize)).list();\n    }\n\n    @GET\n    @Path(\"/{id}\")\n    public Response getById(@PathParam(\"id\") Long id) {\n        return repository.findByIdOptional(id)\n            .map(entity -> Response.ok(entity).build())\n            .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());\n    }\n\n    @POST\n    @Transactional\n    public Response create(@Valid @NotNull Order entity) {\n        entity.setId(null);\n        repository.persist(entity);\n        return Response.created(URI.create(\"/api/order/\" + entity.getId())).entity(entity).build();\n    }\n\n    @PUT\n    @Path(\"/{id}\")\n    @Transactional\n    public Response update(@PathParam(\"id\") Long id, @Valid @NotNull Order updated) {\n        Order existing = repository.findById(id);\n        if (existing == null) {\n            return Response.status(Response.Status.NOT_FOUND).build();\n        }\n        if (updated.getCustomerEmail() != null) {\n            existing.setCustomerEmail(updated.getCustomerEmail());\n        }\n        if (updated.getTotalAmount() != null) {\n            existing.setTotalAmount(updated.getTotalAmount());\n        }\n        if (updated.getStatus() != null) {\n            existing.setStatus(updated.getStatus());\n        }\n        if (updated.getCreatedAt() != null) {\n            existing.setCreatedAt(updated.getCreatedAt());\n        }\n        return Response.ok(existing).build();\n    }\n\n    @DELETE\n    @Path(\"/{id}\")\n    @Transactional\n    public Response delete(@PathParam(\"id\") Long id) {\n        boolean deleted = repository.deleteById(id);\n        if (!deleted) {\n            return Response.status(Response.Status.NOT_FOUND).build();\n        }\n        return Response.status(Response.Status.NO_CONTENT).build();\n    }\n}\n",
+      "digest": "31db68a4f50ac9fbb62ca6ee6da8139f9524fcec26af43f46b8b5d8791f312ca"
+    },
+    {
+      "path": "src/test/java/com/tcs/agentia/order/resource/OrderResourceTest.java",
+      "content": "package com.tcs.agentia.order.resource;\n\nimport io.quarkus.test.junit.QuarkusTest;\nimport io.restassured.http.ContentType;\nimport org.junit.jupiter.api.Test;\nimport static io.restassured.RestAssured.given;\nimport static org.hamcrest.CoreMatchers.*;\n\n@QuarkusTest\npublic class OrderResourceTest {\n\n    @Test\n    public void testListEndpoint() {\n        given()\n            .when().get(\"/api/order\")\n            .then()\n            .statusCode(200);\n    }\n\n    @Test\n    public void testGetNotFoundEndpoint() {\n        given()\n            .when().get(\"/api/order/999999\")\n            .then()\n            .statusCode(404);\n    }\n\n    @Test\n    public void testCreateGetUpdateAndDeleteLifecycle() {\n        Object createdId = given()\n            .contentType(ContentType.JSON)\n            .body(\"{\\\"customerEmail\\\": \\\"user3@example.com\\\", \\\"totalAmount\\\": 300.0, \\\"status\\\": \\\"sample_status_3\\\", \\\"createdAt\\\": \\\"2026-10-16T12:00:00Z\\\"}\")\n            .when().post(\"/api/order\")\n            .then()\n            .statusCode(201)\n            .body(\"id\", notNullValue())\n            .extract().path(\"id\");\n\n        given()\n            .when().get(\"/api/order/\" + createdId)\n            .then()\n            .statusCode(200)\n            .body(\"id\", notNullValue());\n\n        given()\n            .contentType(ContentType.JSON)\n            .body(\"{\\\"customerEmail\\\": \\\"user4@example.com\\\", \\\"totalAmount\\\": 400.0, \\\"status\\\": \\\"sample_status_4\\\", \\\"createdAt\\\": \\\"2026-10-17T12:00:00Z\\\"}\")\n            .when().put(\"/api/order/\" + createdId)\n            .then()\n            .statusCode(200)\n            .body(\"customerEmail\", equalTo(\"user4@example.com\"));\n\n        given()\n            .when().delete(\"/api/order/\" + createdId)\n            .then()\n            .statusCode(204);\n\n        given()\n            .when().get(\"/api/order/\" + createdId)\n            .then()\n            .statusCode(404);\n    }\n\n    @Test\n    public void testUpdateNotFoundEndpoint() {\n        given()\n            .contentType(ContentType.JSON)\n            .body(\"{\\\"customerEmail\\\": \\\"user4@example.com\\\", \\\"totalAmount\\\": 400.0, \\\"status\\\": \\\"sample_status_4\\\", \\\"createdAt\\\": \\\"2026-10-17T12:00:00Z\\\"}\")\n            .when().put(\"/api/order/999999\")\n            .then()\n            .statusCode(404);\n    }\n\n    @Test\n    public void testDeleteNotFoundEndpoint() {\n        given()\n            .when().delete(\"/api/order/999999\")\n            .then()\n            .statusCode(404);\n    }\n}\n",
+      "digest": "ccd81bd3c06f998520f1f191b941a0b075f055b376531035ecf6bcd57b5f0bb1"
+    },
+    {
+      "path": "src/test/java/com/tcs/agentia/order/repository/OrderRepositoryTest.java",
+      "content": "package com.tcs.agentia.order.repository;\n\nimport com.tcs.agentia.order.Order;\nimport io.quarkus.test.junit.QuarkusTest;\nimport jakarta.inject.Inject;\nimport jakarta.transaction.Transactional;\nimport org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.*;\nimport java.math.BigDecimal;\nimport java.sql.Timestamp;\nimport java.time.LocalDate;\nimport java.time.LocalDateTime;\nimport java.time.Instant;\nimport java.util.UUID;\n\n@QuarkusTest\npublic class OrderRepositoryTest {\n\n    @Inject\n    OrderRepository repository;\n\n    @Test\n    @Transactional\n    public void testPersistAndFind() {\n        repository.deleteAll();\n        Order entity = new Order();\n        entity.setCustomerEmail(\"Sample\");\n        entity.setTotalAmount(new BigDecimal(\"100.00\"));\n        entity.setStatus(\"Sample\");\n        entity.setCreatedAt(Instant.now());\n\n        repository.persist(entity);\n        assertNotNull(entity.getId());\n        assertTrue(repository.findByIdOptional(entity.getId()).isPresent());\n        assertNotNull(repository.findById(entity.getId()));\n        repository.deleteById(entity.getId());\n    }\n\n    @Test\n    @Transactional\n    public void testDelete() {\n        repository.deleteAll();\n        Order entity = new Order();\n        entity.setCustomerEmail(\"Sample_2\");\n        entity.setTotalAmount(new BigDecimal(\"200.00\"));\n        entity.setStatus(\"Sample_2\");\n        entity.setCreatedAt(Instant.now());\n\n        repository.persist(entity);\n        Long id = entity.getId();\n        assertNotNull(id);\n\n        boolean deleted = repository.deleteById(id);\n        assertTrue(deleted);\n        assertTrue(repository.findByIdOptional(id).isEmpty());\n    }\n}\n",
+      "digest": "53bda9b379829034c2cb5bcd731f7489b20b80202717cf686a7e87163f6d7da9"
+    },
+    {
+      "path": "pom.xml",
+      "content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n    <modelVersion>4.0.0</modelVersion>\n    <groupId>com.tcs.agentia.order</groupId>\n    <artifactId>order-service</artifactId>\n    <version>1.0.0-SNAPSHOT</version>\n\n    <properties>\n        <compiler-plugin.version>3.13.0</compiler-plugin.version>\n        <maven.compiler.release>21</maven.compiler.release>\n        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>\n        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>\n        <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>\n        <quarkus.platform.version>3.15.1</quarkus.platform.version>\n        <surefire-plugin.version>3.3.1</surefire-plugin.version>\n    </properties>\n\n    <dependencyManagement>\n        <dependencies>\n            <dependency>\n                <groupId>${quarkus.platform.group-id}</groupId>\n                <artifactId>${quarkus.platform.artifact-id}</artifactId>\n                <version>${quarkus.platform.version}</version>\n                <type>pom</type>\n                <scope>import</scope>\n            </dependency>\n        </dependencies>\n    </dependencyManagement>\n\n    <dependencies>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-arc</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-hibernate-orm-panache</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-hibernate-validator</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-jdbc-postgresql</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-rest-jackson</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-jdbc-h2</artifactId>\n            <scope>test</scope>\n        </dependency>\n        <dependency>\n            <groupId>io.quarkus</groupId>\n            <artifactId>quarkus-junit5</artifactId>\n            <scope>test</scope>\n        </dependency>\n        <dependency>\n            <groupId>io.rest-assured</groupId>\n            <artifactId>rest-assured</artifactId>\n            <scope>test</scope>\n        </dependency>\n    </dependencies>\n\n    <build>\n        <plugins>\n            <plugin>\n                <groupId>${quarkus.platform.group-id}</groupId>\n                <artifactId>quarkus-maven-plugin</artifactId>\n                <version>${quarkus.platform.version}</version>\n                <extensions>true</extensions>\n                <executions>\n                    <execution>\n                        <goals>\n                            <goal>build</goal>\n                            <goal>generate-code</goal>\n                            <goal>generate-code-tests</goal>\n                        </goals>\n                    </execution>\n                </executions>\n            </plugin>\n            <plugin>\n                <artifactId>maven-compiler-plugin</artifactId>\n                <version>${compiler-plugin.version}</version>\n                <configuration>\n                    <compilerArgs>\n                        <arg>-parameters</arg>\n                    </compilerArgs>\n                </configuration>\n            </plugin>\n            <plugin>\n                <artifactId>maven-surefire-plugin</artifactId>\n                <version>${surefire-plugin.version}</version>\n                <configuration>\n                    <systemPropertyVariables>\n                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>\n                    </systemPropertyVariables>\n                </configuration>\n            </plugin>\n        </plugins>\n    </build>\n</project>\n",
+      "digest": "808026420965e4b06614e752f40011b744c02c13d94cedbad5bae475831b6866"
+    },
+    {
+      "path": "src/main/resources/application.properties",
+      "content": "quarkus.application.name=order-service\nquarkus.http.port=8080\nquarkus.log.level=INFO\nquarkus.datasource.db-kind=postgresql\n%test.quarkus.datasource.db-kind=h2\n\n# Datasource connection settings per profile\n%dev.quarkus.datasource.jdbc.url=${DB_JDBC_URL:jdbc:postgresql://localhost:5432/order_service}\n%dev.quarkus.datasource.username=${DB_USERNAME:postgres}\n%dev.quarkus.datasource.password=${DB_PASSWORD:postgres}\n\n%test.quarkus.datasource.jdbc.url=${TEST_DB_JDBC_URL:jdbc:h2:mem:order_service_test;DB_CLOSE_DELAY=-1}\n%test.quarkus.datasource.username=${TEST_DB_USERNAME:sa}\n%test.quarkus.datasource.password=${TEST_DB_PASSWORD:sa}\n\n%prod.quarkus.datasource.jdbc.url=${DB_JDBC_URL:jdbc:postgresql://localhost:5432/order_service}\n%prod.quarkus.datasource.username=${DB_USERNAME:postgres}\n%prod.quarkus.datasource.password=${DB_PASSWORD:postgres}\n\n# Database schema management per environment (never drop-and-create in production)\n%dev.quarkus.hibernate-orm.database.generation=drop-and-create\n%test.quarkus.hibernate-orm.database.generation=drop-and-create\n%prod.quarkus.hibernate-orm.database.generation=${DB_SCHEMA_GENERATION:validate}\n\n# Reactive Messaging Kafka configuration\n%dev.kafka.bootstrap.servers=localhost:9092\n%test.kafka.bootstrap.servers=localhost:9092\n%test.quarkus.kafka.devservices.enabled=false\n%prod.kafka.bootstrap.servers=${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}\n",
+      "digest": "eb9c6112a897ddb532334da80a908bea68b4be7ca408c21d19600e727d0278e0"
+    }
+  ],
+  "outcome": "SUCCESS",
+  "profile": null,
+  "stage": "done",
+  "history": [
+    {
+      "stage": "validate",
+      "attempts": 0
+    },
+    {
+      "stage": "generate",
+      "attempts": 0
+    },
+    {
+      "stage": "verify",
+      "attempts": 0
+    }
+  ]
+}

@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentIA v2 Microservices Blueprint Catalog",
+  "description": "Conjunto de especificaciones y blueprints de microservicios listos para pruebas en AgentIA v2, generación hermética y despliegue local o cloud.",
+  "examples": [
+    {
+      "id": "MS-001",
+      "name": "order-service",
+      "serviceName": "order-service",
+      "packageName": "com.tcs.agentia.order",
+      "framework": "quarkus-3",
+      "frameworkVersion": "3.15.1",
+      "description": "Microservicio de gestión de órdenes de compra con persistencia en PostgreSQL y publicación de eventos transaccionales en Apache Kafka.",
+      "parameters": {
+        "database": "POSTGRESQL",
+        "messaging": "KAFKA",
+        "requirementsSize": "MEDIUM",
+        "workspaceDir": "/tmp/agentia-workspace/order-service",
+        "testMode": "full"
+      },
+      "userStories": [
+        {
+          "id": "US-001",
+          "title": "Creación y persistencia de orden de compra",
+          "role": "Cliente del Comercio Electrónico",
+          "feature": "Registrar una nueva orden con validación de montos e ítems",
+          "benefit": "Asegurar el procesamiento financiero y disparar el aprovisionamiento",
+          "scenarios": [
+            {
+              "title": "Creación exitosa con datos válidos",
+              "given": "El cliente provee un email válido y un total superior a cero",
+              "when": "Se envía POST /api/orders con el payload de la orden",
+              "then": "Se retorna 201 Created con cabecera Location y el identificador UUID asignado"
+            },
+            {
+              "title": "Rechazo por monto inválido",
+              "given": "El payload contiene totalAmount negativo o cero",
+              "when": "Se invoca POST /api/orders",
+              "then": "Se retorna 400 Bad Request por violación de validación Jakarta"
+            }
+          ],
+          "acceptanceCriteria": [
+            "El ID debe generarse de forma automática como UUID sin ser sobreescrito por el cliente",
+            "El estado inicial debe ser PENDING_PAYMENT",
+            "La fecha createdAt debe ser asignada automáticamente al instante de recepción"
+          ]
+        },
+        {
+          "id": "US-002",
+          "title": "Consulta y rastreo de orden por identificador",
+          "role": "Sistema de Seguimiento / Cliente",
+          "feature": "Obtener el detalle y estado actual de una orden existente",
+          "benefit": "Monitoreo en tiempo real del ciclo de entrega",
+          "scenarios": [
+            {
+              "title": "Consulta de orden existente",
+              "given": "Existe una orden persistida con ID conocido",
+              "when": "Se realiza GET /api/orders/{id}",
+              "then": "Se retorna 200 OK con la representación JSON completa"
+            },
+            {
+              "title": "Consulta de orden inexistente",
+              "given": "No existe registro para el ID solicitado",
+              "when": "Se realiza GET /api/orders/999999",
+              "then": "Se retorna 404 Not Found"
+            }
+          ]
+        }
+      ],
+      "entities": [
+        {
+          "name": "PurchaseOrder",
+          "tableName": "purchase_orders",
+          "description": "Entidad principal de orden de compra agregada",
+          "fields": [
+            { "name": "id", "type": "UUID", "primaryKey": true, "nullable": false },
+            { "name": "customerEmail", "type": "String", "nullable": false, "validationRules": ["@Email", "@NotNull"] },
+            { "name": "totalAmount", "type": "BigDecimal", "nullable": false, "validationRules": ["@Positive", "@NotNull"] },
+            { "name": "status", "type": "String", "nullable": false },
+            { "name": "createdAt", "type": "Instant", "nullable": false }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MS-002",
+      "name": "payment-escrow-service",
+      "serviceName": "payment-escrow-service",
+      "packageName": "com.tcs.agentia.escrow",
+      "framework": "quarkus-3",
+      "frameworkVersion": "3.15.1",
+      "description": "Microservicio financiero de retención y liquidación de pagos en custodia (Escrow) con persistencia PostgreSQL y transacciones ACID.",
+      "parameters": {
+        "database": "POSTGRESQL",
+        "messaging": "NONE",
+        "requirementsSize": "SMALL",
+        "workspaceDir": "/tmp/agentia-workspace/payment-escrow-service",
+        "testMode": "full"
+      },
+      "userStories": [
+        {
+          "id": "US-ESC-01",
+          "title": "Retención de fondos en custodia",
+          "role": "Operador de Pagos",
+          "feature": "Bloquear fondos de una transacción hasta la confirmación de entrega",
+          "benefit": "Mitigar fraude bilateral entre comprador y vendedor",
+          "scenarios": [
+            {
+              "title": "Custodia exitosa",
+              "given": "Monto positivo y cuentas válidas de emisor y receptor",
+              "when": "POST /api/escrowcontract con estado HELD",
+              "then": "Se persiste el contrato en PostgreSQL retornando 201 Created"
+            }
+          ]
+        }
+      ],
+      "entities": [
+        {
+          "name": "EscrowContract",
+          "tableName": "escrow_contracts",
+          "description": "Contrato de custodia financiera",
+          "fields": [
+            { "name": "id", "type": "Long", "primaryKey": true, "nullable": false },
+            { "name": "contractCode", "type": "String", "nullable": false, "unique": true, "validationRules": ["@NotBlank"] },
+            { "name": "heldAmount", "type": "BigDecimal", "nullable": false, "validationRules": ["@Positive"] },
+            { "name": "buyerAccount", "type": "String", "nullable": false },
+            { "name": "sellerAccount", "type": "String", "nullable": false },
+            { "name": "status", "type": "String", "nullable": false },
+            { "name": "createdAt", "type": "Instant", "nullable": false }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MS-003",
+      "name": "telemetry-ingestion-service",
+      "serviceName": "telemetry-ingestion-service",
+      "packageName": "com.tcs.agentia.iot",
+      "framework": "quarkus-3",
+      "frameworkVersion": "3.15.1",
+      "description": "Microservicio de ingesta de métricas de sensores IoT de alta velocidad con MySQL y transmisión reactiva a tópicos Kafka.",
+      "parameters": {
+        "database": "MYSQL",
+        "messaging": "KAFKA",
+        "requirementsSize": "MEDIUM",
+        "workspaceDir": "/tmp/agentia-workspace/telemetry-ingestion-service",
+        "testMode": "full"
+      },
+      "userStories": [
+        {
+          "id": "US-IOT-01",
+          "title": "Registro de telemetría de dispositivo",
+          "role": "Gateway de Sensores IoT",
+          "feature": "Ingesta masiva de lecturas de temperatura y presión",
+          "benefit": "Detección temprana de anomalías en equipamiento industrial",
+          "scenarios": [
+            {
+              "title": "Recepción de telemetría normal",
+              "given": "Identificador de dispositivo y métricas válidas",
+              "when": "POST /api/devicesensor",
+              "then": "Retorna 201 Created y emite evento al canal de streaming"
+            }
+          ]
+        }
+      ],
+      "entities": [
+        {
+          "name": "DeviceSensor",
+          "tableName": "device_sensors",
+          "description": "Lecturas cronológicas de telemetría industrial",
+          "fields": [
+            { "name": "id", "type": "Long", "primaryKey": true, "nullable": false },
+            { "name": "deviceId", "type": "String", "nullable": false, "validationRules": ["@NotBlank"] },
+            { "name": "metricType", "type": "String", "nullable": false },
+            { "name": "metricValue", "type": "Double", "nullable": false },
+            { "name": "recordedAt", "type": "Instant", "nullable": false }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MS-004",
+      "name": "customer-profile-service",
+      "serviceName": "customer-profile-service",
+      "packageName": "com.tcs.agentia.customer",
+      "framework": "quarkus-3",
+      "frameworkVersion": "3.15.1",
+      "description": "Microservicio de gestión de perfiles de clientes con clave primaria natural UUID, validación de emails y unicidad.",
+      "parameters": {
+        "database": "POSTGRESQL",
+        "messaging": "NONE",
+        "requirementsSize": "SMALL",
+        "workspaceDir": "/tmp/agentia-workspace/customer-profile-service",
+        "testMode": "full"
+      },
+      "userStories": [
+        {
+          "id": "US-CUST-01",
+          "title": "Registro de perfil de cliente",
+          "role": "Usuario / Portal Web",
+          "feature": "Alta de usuario con verificación de correo y teléfono",
+          "benefit": "Centralización de identidad de clientes",
+          "scenarios": [
+            {
+              "title": "Alta exitosa de cliente",
+              "given": "Email corporativo no registrado previamente",
+              "when": "POST /api/customerprofile",
+              "then": "Retorna 201 Created con entidad registrada"
+            }
+          ]
+        }
+      ],
+      "entities": [
+        {
+          "name": "CustomerProfile",
+          "tableName": "customer_profiles",
+          "description": "Ficha maestra de datos del cliente",
+          "fields": [
+            { "name": "id", "type": "UUID", "primaryKey": true, "nullable": false },
+            { "name": "fullName", "type": "String", "nullable": false, "validationRules": ["@NotBlank"] },
+            { "name": "email", "type": "String", "nullable": false, "unique": true, "validationRules": ["@Email", "@NotNull"] },
+            { "name": "phoneNumber", "type": "String", "nullable": true },
+            { "name": "tier", "type": "String", "nullable": false },
+            { "name": "active", "type": "Boolean", "nullable": false }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MS-005",
+      "name": "task-tracker-service",
+      "serviceName": "task-tracker-service",
+      "packageName": "com.tcs.agentia.tracker",
+      "framework": "quarkus-3",
+      "frameworkVersion": "3.15.1",
+      "description": "Microservicio ágil de seguimiento de tareas y sprints con base de datos H2 en memoria, ideal para pruebas de humo locales inmediatas sin dependencias externas.",
+      "parameters": {
+        "database": "H2",
+        "messaging": "NONE",
+        "requirementsSize": "SMALL",
+        "workspaceDir": "/tmp/agentia-workspace/task-tracker-service",
+        "testMode": "full"
+      },
+      "userStories": [
+        {
+          "id": "US-TSK-01",
+          "title": "Ciclo de vida de tarea ágil",
+          "role": "Desarrollador / Scrum Master",
+          "feature": "Crear, consultar, actualizar y eliminar tareas de un sprint",
+          "benefit": "Control de entregables del equipo sin configuración de base de datos externa",
+          "scenarios": [
+            {
+              "title": "Creación y listado de tarea",
+              "given": "Título y estado de tarea",
+              "when": "POST /api/agiletask y posterior GET /api/agiletask",
+              "then": "Retorna 201 Created y 200 OK con la lista conteniendo la nueva tarea"
+            }
+          ]
+        }
+      ],
+      "entities": [
+        {
+          "name": "AgileTask",
+          "tableName": "agile_tasks",
+          "description": "Elemento de trabajo del backlog",
+          "fields": [
+            { "name": "id", "type": "Long", "primaryKey": true, "nullable": false },
+            { "name": "title", "type": "String", "nullable": false, "validationRules": ["@NotBlank"] },
+            { "name": "assignee", "type": "String", "nullable": true },
+            { "name": "storyPoints", "type": "Integer", "nullable": false, "validationRules": ["@Min(1)"] },
+            { "name": "status", "type": "String", "nullable": false }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

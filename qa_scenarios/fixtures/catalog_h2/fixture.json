@@ -1,0 +1,106 @@
+{
+  "fixtureId": "catalog-h2",
+  "version": "1.0.0",
+  "blueprint": {
+    "serviceName": "catalog-service",
+    "packageName": "com.example.catalog",
+    "framework": "quarkus",
+    "frameworkVersion": "3.15.1",
+    "javaVersion": "21",
+    "buildTool": "maven",
+    "database": "H2",
+    "messaging": "NONE",
+    "parameters": {
+      "database": "H2",
+      "messaging": "NONE",
+      "requirementsSize": "MEDIUM"
+    },
+    "entities": [
+      {
+        "name": "User",
+        "tableName": "users",
+        "primaryKey": "id",
+        "fields": [
+          {
+            "name": "id",
+            "type": "Long",
+            "nullable": false,
+            "primaryKey": true
+          },
+          {
+            "name": "email",
+            "type": "String",
+            "nullable": false,
+            "unique": true
+          },
+          {
+            "name": "displayName",
+            "type": "String",
+            "nullable": false
+          }
+        ]
+      },
+      {
+        "name": "Product",
+        "tableName": "products",
+        "primaryKey": "id",
+        "fields": [
+          {
+            "name": "id",
+            "type": "Long",
+            "nullable": false,
+            "primaryKey": true
+          },
+          {
+            "name": "sku",
+            "type": "String",
+            "nullable": false,
+            "unique": true
+          },
+          {
+            "name": "name",
+            "type": "String",
+            "nullable": false
+          },
+          {
+            "name": "price",
+            "type": "BigDecimal",
+            "nullable": false
+          }
+        ]
+      }
+    ],
+    "userStories": [
+      {
+        "id": "US-001",
+        "title": "Register a user",
+        "description": "As a customer, I want to register with an email address so that I can manage my catalog account.",
+        "acceptanceCriteria": [
+          "The service rejects registrations without an email address.",
+          "The service rejects an email address already assigned to another user.",
+          "A successful registration returns the new user identifier."
+        ]
+      },
+      {
+        "id": "US-002",
+        "title": "Browse products",
+        "description": "As a customer, I want to browse products so that I can discover items available in the catalog.",
+        "acceptanceCriteria": [
+          "The service returns products with their SKU, name, and price.",
+          "The service returns an empty collection when no products match the request."
+        ]
+      }
+    ]
+  },
+  "expectations": {
+    "requiredFiles": [
+      "pom.xml",
+      "src/main/resources/application.properties",
+      "src/main/java/com/example/catalog/User.java",
+      "src/main/java/com/example/catalog/Product.java",
+      "src/main/java/com/example/catalog/resource/UserResource.java",
+      "src/main/java/com/example/catalog/resource/ProductResource.java"
+    ],
+    "oracleTestRelativePath": "src/test/java/com/example/catalog/resource/OracleCatalogAcceptanceTest.java"
+  }
+}
